@@ -1,0 +1,7 @@
+/tmp
+monitor.db
+.env
+/storage
+.DS_Store
+.vscode
+config.yaml

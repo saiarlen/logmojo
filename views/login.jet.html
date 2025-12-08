@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Local Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gradient-to-br from-base-300 to-base-100 min-h-screen flex items-center justify-center p-4">
+    <div class="card w-full max-w-sm bg-base-100/80 backdrop-blur-xl shadow-2xl border border-base-content/10">
+        <div class="card-body">
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Welcome Back</h2>
+                <p class="text-sm text-base-content/60 mt-2">Sign in to monitor your system</p>
+            </div>
+            
+            <form action="/login" method="POST" class="space-y-4">
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Username</span>
+                    </label>
+                    <input type="text" name="username" placeholder="admin" class="input input-bordered input-primary bg-base-200/50" required />
+                </div>
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Password</span>
+                    </label>
+                    <input type="password" name="password" placeholder="••••••••" class="input input-bordered input-primary bg-base-200/50" required />
+                </div>
+                
+                {{ if isset(error) }}
+                <div class="alert alert-error text-sm py-2 rounded-lg shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>{{ error }}</span>
+                </div>
+                {{ end }}
+
+                <div class="form-control mt-8">
+                    <button class="btn btn-primary w-full shadow-lg shadow-primary/20">Sign In</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

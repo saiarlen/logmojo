@@ -1,0 +1,92 @@
+{{ extends "layouts/main" }}
+
+{{ block script() }}
+<script>
+    let sortKey = 'cpu';
+    let sortDesc = true;
+    let processes = [];
+
+    async function loadProcesses() {
+        processes = await fetchAPI('/processes');
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('proc-body');
+        tbody.innerHTML = '';
+
+        const search = document.getElementById('search').value.toLowerCase();
+        
+        let filtered = processes.filter(p => 
+            p.name.toLowerCase().includes(search) || 
+            p.pid.toString().includes(search)
+        );
+
+        filtered.sort((a, b) => {
+            let valA = a[sortKey];
+            let valB = b[sortKey];
+            
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+            
+            if (valA < valB) return sortDesc ? 1 : -1;
+            if (valA > valB) return sortDesc ? -1 : 1;
+            return 0;
+        });
+
+        filtered.forEach(p => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="font-mono">${p.pid}</td>
+                <td class="font-bold">${p.name}</td>
+                <td>${p.cpu.toFixed(1)}%</td>
+                <td>${p.memory.toFixed(1)}%</td>
+                <td class="truncate max-w-xs" title="${p.command}">${p.command}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function sort(key) {
+        if (sortKey === key) {
+            sortDesc = !sortDesc;
+        } else {
+            sortKey = key;
+            sortDesc = true;
+        }
+        renderTable();
+    }
+
+    document.getElementById('search').addEventListener('input', renderTable);
+    loadProcesses();
+    setInterval(loadProcesses, 5000); // Auto refresh
+</script>
+{{ end }}
+
+{{ block body() }}
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-3xl font-bold">Processes</h2>
+    <input type="text" placeholder="Search processes..." class="input input-bordered w-full max-w-xs" id="search" />
+</div>
+
+<div class="card bg-base-100 shadow-xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="table table-zebra">
+            <thead>
+                <tr>
+                    <th class="cursor-pointer hover:text-primary" onclick="sort('pid')">PID</th>
+                    <th class="cursor-pointer hover:text-primary" onclick="sort('name')">Name</th>
+                    <th class="cursor-pointer hover:text-primary" onclick="sort('cpu')">CPU %</th>
+                    <th class="cursor-pointer hover:text-primary" onclick="sort('memory')">Mem %</th>
+                    <th>Command</th>
+                </tr>
+            </thead>
+            <tbody id="proc-body">
+                <!-- Rows here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{{ end }}

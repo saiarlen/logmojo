@@ -1,0 +1,284 @@
+{{ extends "layouts/main" }}
+
+{{ block script() }}
+<script>
+    let state = {
+        q: '',
+        app: '',
+        logSource: '', 
+        file: '',
+        level: '',
+        logs: [],
+        files: [],
+        isLoading: false
+    };
+
+    async function init() {
+        await loadApps();
+    }
+
+    async function loadApps() {
+        try {
+            const response = await fetch('/api/apps');
+            const apps = await response.json();
+            const list = document.getElementById('app-list');
+            list.innerHTML = '';
+
+            if (apps && apps.length > 0) {
+                 apps.forEach(app => {
+                    // App Category
+                    const group = document.createElement('div');
+                    group.className = 'mb-1';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'px-4 py-2 text-xs font-bold uppercase tracking-wider opacity-50 mt-2';
+                    header.innerText = app.name;
+                    group.appendChild(header);
+
+                    // Log Sources
+                    app.logs.forEach(log => {
+                        const btn = createSourceBtn(app.name, log.name);
+                        group.appendChild(btn);
+                    });
+                    
+                    list.appendChild(group);
+                });
+            } else {
+                list.innerHTML = '<div class="p-4 text-xs opacity-50">No apps configured</div>';
+            }
+        } catch (e) {
+            console.error("Failed to load apps", e);
+        }
+    }
+
+    function createSourceBtn(appName, logName) {
+        const btn = document.createElement('button');
+        btn.className = 'w-full text-left px-4 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-lg transition-colors flex items-center gap-2 log-source-btn';
+        btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            ${logName}
+        `;
+        
+        btn.onclick = async () => {
+             // Reset UI
+            document.querySelectorAll('.log-source-btn').forEach(b => {
+                b.classList.remove('bg-primary/10', 'text-primary', 'font-medium');
+                b.classList.add('text-base-content/70');
+            });
+            btn.classList.remove('text-base-content/70');
+            btn.classList.add('bg-primary/10', 'text-primary', 'font-medium');
+            
+            state.app = appName;
+            state.logSource = logName;
+            state.file = ''; 
+            
+            // Load Files
+            await loadFiles(appName, logName);
+            
+            searchLogs();
+        };
+        return btn;
+    }
+
+    async function loadFiles(appName, logName) {
+        const selectorContainer = document.getElementById('file-selector-wrapper');
+        selectorContainer.innerHTML = ''; // Clear
+
+        try {
+            const res = await fetch(`/api/logs/files?app=${encodeURIComponent(appName)}&log=${encodeURIComponent(logName)}`);
+            if(!res.ok) throw new Error("Failed");
+            state.files = await res.json();
+            
+            if (state.files && state.files.length > 0) {
+                // Render dropdown
+                const select = document.createElement('select');
+                select.className = 'select select-sm select-bordered w-full max-w-xs text-xs';
+                select.onchange = (e) => {
+                    state.file = e.target.value;
+                    searchLogs();
+                };
+
+                // "All Active" option
+                const allOpt = document.createElement('option');
+                allOpt.value = "";
+                allOpt.text = "Latest / Active";
+                select.appendChild(allOpt);
+
+                state.files.forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f.path;
+                    let txt = f.name;
+                    if(f.is_archive) txt += " (Archive)";
+                    opt.text = txt;
+                    select.appendChild(opt);
+                });
+                
+                selectorContainer.appendChild(select);
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // Filters
+    document.querySelectorAll('.level-btn').forEach(btn => {
+        btn.onclick = () => {
+            const val = btn.dataset.value;
+            if (state.level === val) {
+                state.level = '';
+                btn.classList.remove('btn-active');
+            } else {
+                document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('btn-active'));
+                state.level = val;
+                btn.classList.add('btn-active');
+            }
+            searchLogs();
+        };
+    });
+
+    let timeout;
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        state.q = e.target.value;
+        timeout = setTimeout(searchLogs, 300);
+    });
+
+    async function searchLogs() {
+        if (!state.app || !state.logSource) {
+            console.log('No app or log source selected');
+            return;
+        }
+
+        state.isLoading = true;
+        renderLoading();
+
+        try {
+            const params = new URLSearchParams({
+                q: state.q,
+                app: state.app,
+                log: state.logSource,
+                file: state.file,
+                level: state.level,
+                limit: 500
+            });
+            console.log('Searching logs:', params.toString());
+            const res = await fetch(`/api/logs/search?${params}`);
+            
+            if (!res.ok) {
+                const error = await res.json();
+                console.error('Search error:', error);
+                state.logs = [];
+            } else {
+                state.logs = await res.json();
+                console.log('Found logs:', state.logs.length);
+            }
+            
+            if(!state.logs || !Array.isArray(state.logs)) {
+                state.logs = [];
+            }
+        } catch (e) {
+            console.error('Search exception:', e);
+            state.logs = [];
+        } finally {
+            state.isLoading = false;
+            render();
+        }
+    }
+
+    function renderLoading() {
+        document.getElementById('log-container').innerHTML = 
+            '<div class="flex justify-center p-10"><span class="loading loading-spinner text-primary"></span></div>';
+    }
+
+    function render() {
+        const container = document.getElementById('log-container');
+        container.innerHTML = '';
+
+        if (state.logs.length === 0) {
+            container.innerHTML = '<div class="text-center opacity-50 mt-10 text-sm">No logs found matching criteria.</div>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'table table-xs w-full font-mono';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th class="w-40">Time</th>
+                    <th class="w-24">Level</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
+
+        const tbody = table.querySelector('tbody');
+        state.logs.forEach(log => {
+            const tr = document.createElement('tr');
+            
+            let levelClass = '';
+            if (log.level.includes('ERR') || log.level.includes('FATAL')) levelClass = 'text-error font-bold';
+            else if (log.level.includes('WARN')) levelClass = 'text-warning';
+            else levelClass = 'text-info';
+
+            // Highlight
+            let msg = log.message;
+            if (state.q) {
+                try {
+                    const regex = new RegExp(`(${state.q})`, 'gi');
+                    msg = msg.replace(regex, '<span class="bg-warning/20 text-warning">$1</span>');
+                } catch(e) {}
+            }
+
+            tr.innerHTML = `
+                <td class="whitespace-nowrap opacity-60">${new Date(log.timestamp).toLocaleString()}</td>
+                <td class="${levelClass}">${log.level}</td>
+                <td class="break-all">${msg}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        container.appendChild(table);
+    }
+
+    init();
+</script>
+{{ end }}
+
+{{ block body() }}
+<div class="flex h-[calc(100vh-6rem)] gap-4 animate__animated animate__fadeIn">
+    <!-- Sidebar -->
+    <div class="w-64 shrink-0 card bg-base-100 shadow-xl border border-base-content/5 flex flex-col">
+        <div class="p-4 border-b border-base-content/5 font-bold text-sm opacity-70">Source</div>
+        <div class="flex-1 overflow-auto p-2" id="app-list">
+            <!-- App list -->
+        </div>
+    </div>
+
+    <!-- Main -->
+    <div class="flex-1 flex flex-col gap-4">
+        <!-- Toolbar -->
+        <div class="flex flex-wrap gap-4 items-center p-3 card bg-base-100 shadow-xl border border-base-content/5">
+             <!-- File Selector -->
+             <div id="file-selector-wrapper"></div>
+
+             <div class="flex-1 relative">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input type="text" id="search-input" placeholder="Search (Regex confirmed)" class="input input-sm input-bordered w-full pl-10" />
+            </div>
+            
+            <div class="join">
+                <button class="join-item btn btn-sm level-btn" data-value="INFO">Info</button>
+                <button class="join-item btn btn-sm level-btn" data-value="WARN">Warn</button>
+                <button class="join-item btn btn-sm level-btn" data-value="ERROR">Error</button>
+            </div>
+        </div>
+
+        <!-- Logs -->
+        <div class="flex-1 card bg-base-100 shadow-xl border border-base-content/5 overflow-hidden">
+            <div class="flex-1 overflow-auto p-0" id="log-container">
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}

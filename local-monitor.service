@@ -1,0 +1,15 @@
+[Unit]
+Description=Local Monitor Agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/bin/monitor-agent
+WorkingDirectory=/usr/local/share/local-monitor
+Restart=always
+RestartSec=5
+Environment=MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:9000
+
+[Install]
+WantedBy=multi-user.target

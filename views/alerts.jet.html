@@ -1,0 +1,63 @@
+{{ extends "layouts/main" }}
+
+{{ block script() }}
+<script>
+    async function loadAlerts() {
+        const alerts = await fetchAPI('/alerts/history');
+        const tbody = document.getElementById('alerts-body');
+        tbody.innerHTML = '';
+
+        if (alerts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-neutral-content">No alerts recorded.</td></tr>';
+            return;
+        }
+
+        alerts.forEach(a => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-neutral-content">${new Date(a.timestamp).toLocaleString()}</td>
+                <td class="font-bold">${a.type}</td>
+                <td>${a.message}</td>
+                <td>
+                    <span class="badge ${a.resolved ? 'badge-success' : 'badge-error'} badge-outline">
+                        ${a.resolved ? 'Resolved' : 'Active'}
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function testAlert() {
+        await fetchAPI('/alerts/test', { method: 'POST' });
+        setTimeout(loadAlerts, 500);
+    }
+
+    loadAlerts();
+</script>
+{{ end }}
+
+{{ block body() }}
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-3xl font-bold">Alerts History</h2>
+    <button class="btn btn-secondary btn-sm" onclick="testAlert()">Test Alert</button>
+</div>
+
+<div class="card bg-base-100 shadow-xl overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="alerts-body">
+                <!-- Rows here -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{{ end }}

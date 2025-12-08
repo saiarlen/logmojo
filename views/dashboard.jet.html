@@ -1,0 +1,324 @@
+{{ extends "layouts/main" }}
+
+{{ block script() }}
+<script>
+    // System Theme Colors
+    const colors = {
+        primary: '#7480ff',    // DaisyUI Primary
+        secondary: '#ff52d9',  // DaisyUI Secondary
+        error: '#ff5724',      // DaisyUI Error
+        grid: '#374151',
+        text: '#a6adbb',
+        bg: 'transparent'
+    };
+
+    // Common ECharts Configuration
+    const commonOptions = {
+        backgroundColor: 'transparent',
+        grid: {
+            top: 20,
+            right: 0,
+            bottom: 20,
+            left: 0,
+            containLabel: true
+        },
+        tooltip: {
+            trigger: 'axis',
+            backgroundColor: 'rgba(25, 30, 36, 0.9)',
+            borderColor: '#374151',
+            textStyle: { color: '#a6adbb' },
+            formatter: (params) => {
+                const date = new Date(params[0].value[0]);
+                const time = date.toLocaleTimeString();
+                return `${time}<br/>${params[0].marker} ${params[0].seriesName}: <b>${params[0].value[1].toFixed(1)}%</b>`;
+            }
+        },
+        xAxis: {
+            type: 'time',
+            boundaryGap: false,
+            splitLine: { show: false },
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { show: false } // Clean look
+        },
+        yAxis: {
+            type: 'value',
+            max: 100,
+            min: 0,
+            splitLine: {
+                show: true,
+                lineStyle: { color: '#374151', type: 'dashed', opacity: 0.3 }
+            },
+            axisLabel: { 
+                color: '#6b7280', 
+                fontSize: 10,
+                formatter: '{value}%'
+            }
+        },
+        animation: false // Disable default animation for smooth stream
+    };
+
+    const createChart = (id, color, name) => {
+        const chartDom = document.getElementById(id);
+        const chart = echarts.init(chartDom);
+        
+        const options = {
+            ...commonOptions,
+            series: [{
+                name: name,
+                type: 'line',
+                smooth: true,
+                showSymbol: false,
+                lineStyle: { width: 3, color: color },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: color },
+                        { offset: 1, color: 'rgba(0, 0, 0, 0)' }
+                    ]),
+                    opacity: 0.3
+                },
+                data: []
+            }]
+        };
+        
+        chart.setOption(options);
+        return chart;
+    };
+
+    // Initialize Charts
+    const charts = {
+        cpu: createChart('cpuChart', colors.primary, 'CPU'),
+        ram: createChart('ramChart', colors.secondary, 'RAM'),
+        disk: createChart('diskChart', colors.error, 'Disk')
+    };
+
+    // Handle Resize
+    window.addEventListener('resize', () => {
+        Object.values(charts).forEach(c => c.resize());
+    });
+
+    // Data Structures
+    const liveData = { cpu: [], ram: [], disk: [] };
+    const MAX_POINTS = 100; // Keep more history for smoothness
+
+    let prevNetSent = 0;
+    let prevNetRecv = 0;
+    let firstPacket = true;
+
+    // WebSocket Connection
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/api/ws/metrics`);
+
+    ws.onmessage = (event) => {
+        const m = JSON.parse(event.data);
+        const now = new Date().getTime();
+
+        // 1. Update Header Stats
+        document.getElementById('uptime-header').innerText = 
+            `Uptime: ${(m.uptime / 3600).toFixed(1)}h | Load: ${m.load_avg.toFixed(2)}`;
+
+        // 2. Update Tiles (Text & Progress Bars)
+        updateTile('cpu', m.cpu_percent, `${m.busy_cores} Busy / ${m.cpu_cores} Cores`);
+        updateTile('ram', m.ram_percent, `${formatBytes(m.ram_used)} / ${formatBytes(m.ram_total)}`);
+        updateTile('disk', m.disk_percent, `${formatBytes(m.disk_used)} / ${formatBytes(m.disk_total)}`);
+
+        // 3. Network Calculations
+        if (firstPacket) {
+            prevNetSent = m.net_sent;
+            prevNetRecv = m.net_recv;
+            firstPacket = false;
+        } else {
+            const upSpeed = m.net_sent - prevNetSent;
+            const downSpeed = m.net_recv - prevNetRecv;
+            
+            document.getElementById('net-up').innerText = formatBytes(upSpeed) + '/s';
+            document.getElementById('net-down').innerText = formatBytes(downSpeed) + '/s';
+
+            prevNetSent = m.net_sent;
+            prevNetRecv = m.net_recv;
+        }
+
+        // 4. Update Charts
+        // Only update if "Live" tab is active
+        if (document.querySelector('.filter-btn.btn-active').dataset.range === 'live') {
+            updateLiveSeries(charts.cpu, liveData.cpu, now, m.cpu_percent);
+            updateLiveSeries(charts.ram, liveData.ram, now, m.ram_percent);
+            updateLiveSeries(charts.disk, liveData.disk, now, m.disk_percent);
+        }
+    };
+
+    function updateTile(id, percent, text) {
+        document.getElementById(id + '-val').innerText = percent.toFixed(1) + '%';
+        
+        let textId = id + '-text';
+        if (id === 'cpu') textId = 'cpu-cores';
+        
+        if (text) {
+            const el = document.getElementById(textId);
+            if (el) el.innerText = text;
+        }
+        document.getElementById(id + '-bar').value = percent;
+    }
+
+    function updateLiveSeries(chart, dataArray, timestamp, value) {
+        dataArray.push([timestamp, value]);
+        
+        // Rolling buffer
+        if (dataArray.length > MAX_POINTS) {
+            dataArray.shift();
+        }
+
+        chart.setOption({
+            series: [{
+                data: dataArray
+            }]
+        });
+    }
+
+    // History Loading
+    async function loadHistory(range) {
+        // Clear charts nicely or show loading state
+        if (range === 'live') {
+            liveData.cpu = [];
+            liveData.ram = [];
+            liveData.disk = [];
+            // Reset to empty, waiting for WS
+            charts.cpu.setOption({ series: [{ data: [] }] });
+            charts.ram.setOption({ series: [{ data: [] }] });
+            charts.disk.setOption({ series: [{ data: [] }] });
+            return;
+        }
+
+        // Fetch Data
+        try {
+            const [cpuH, ramH, diskH] = await Promise.all([
+                fetchAPI(`/metrics/history?type=cpu&range=${range}`),
+                fetchAPI(`/metrics/history?type=ram&range=${range}`),
+                fetchAPI(`/metrics/history?type=disk&range=${range}`)
+            ]);
+
+            const processData = (hist) => hist.map(d => [new Date(d.timestamp).getTime(), d.value]);
+
+            charts.cpu.setOption({ series: [{ data: processData(cpuH) }] });
+            charts.ram.setOption({ series: [{ data: processData(ramH) }] });
+            charts.disk.setOption({ series: [{ data: processData(diskH) }] });
+
+        } catch (e) {
+            console.error("Failed to load history:", e);
+        }
+    }
+
+    // Button Handlers
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('btn-active', 'btn-primary'));
+            e.target.classList.add('btn-active', 'btn-primary');
+            loadHistory(e.target.dataset.range);
+        });
+    });
+
+    // Helper for bytes (copied from main.js if not available, or assume main.js has it. 
+    // Usually existing code used formatBytes, so we assume it's globally available or we should verify)
+    // Looking at the previous file content, formatBytes was used but not defined in the block.
+    // It must be in /public/js/main.js. We will leave it as is.
+</script>
+{{ end }}
+
+{{ block body() }}
+<div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 animate__animated animate__fadeInDown">
+    <div>
+        <h2 class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">System Dashboard</h2>
+        <p class="text-base-content/60 text-sm mt-1" id="uptime-header">Loading system stats...</p>
+    </div>
+    
+    <div class="join shadow-lg">
+        <button class="join-item btn btn-sm filter-btn btn-active btn-primary" data-range="live">Live</button>
+        <button class="join-item btn btn-sm filter-btn" data-range="1h">1h</button>
+        <button class="join-item btn btn-sm filter-btn" data-range="6h">6h</button>
+        <button class="join-item btn btn-sm filter-btn" data-range="24h">24h</button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate__animated animate__fadeInUp">
+    <!-- CPU -->
+    <div class="card bg-base-100/50 backdrop-blur shadow-xl border border-base-content/5 hover:border-primary/20 transition-all duration-300">
+        <div class="card-body p-5">
+            <h2 class="card-title text-xs text-base-content/70 uppercase tracking-wider font-bold">CPU Usage</h2>
+            <div class="flex justify-between items-end mt-1">
+                <div class="text-3xl font-bold text-primary" id="cpu-val">0%</div>
+                <div class="text-xs text-base-content/60 font-mono mb-1" id="cpu-cores">Loading...</div>
+            </div>
+            <progress class="progress progress-primary w-full mt-3 h-1.5" value="0" max="100" id="cpu-bar"></progress>
+        </div>
+    </div>
+
+    <!-- RAM -->
+    <div class="card bg-base-100/50 backdrop-blur shadow-xl border border-base-content/5 hover:border-secondary/20 transition-all duration-300">
+        <div class="card-body p-5">
+            <h2 class="card-title text-xs text-base-content/70 uppercase tracking-wider font-bold">Memory</h2>
+            <div class="flex justify-between items-end mt-1">
+                <div class="text-3xl font-bold text-secondary" id="ram-val">0%</div>
+                <div class="text-xs text-base-content/60 font-mono mb-1" id="ram-text">Loading...</div>
+            </div>
+            <progress class="progress progress-secondary w-full mt-3 h-1.5" value="0" max="100" id="ram-bar"></progress>
+        </div>
+    </div>
+
+    <!-- Disk -->
+    <div class="card bg-base-100/50 backdrop-blur shadow-xl border border-base-content/5 hover:border-error/20 transition-all duration-300">
+        <div class="card-body p-5">
+            <h2 class="card-title text-xs text-base-content/70 uppercase tracking-wider font-bold">Disk</h2>
+            <div class="flex justify-between items-end mt-1">
+                <div class="text-3xl font-bold text-error" id="disk-val">0%</div>
+                <div class="text-xs text-base-content/60 font-mono mb-1" id="disk-text">Loading...</div>
+            </div>
+            <progress class="progress progress-error w-full mt-3 h-1.5" value="0" max="100" id="disk-bar"></progress>
+        </div>
+    </div>
+
+    <!-- Network -->
+    <div class="card bg-base-100/50 backdrop-blur shadow-xl border border-base-content/5 hover:border-accent/20 transition-all duration-300">
+        <div class="card-body p-5">
+            <h2 class="card-title text-xs text-base-content/70 uppercase tracking-wider font-bold">Network</h2>
+            <div class="flex flex-col gap-2 mt-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-success flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+                        Up
+                    </span>
+                    <span class="font-mono text-sm font-bold" id="net-up">0 B/s</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-xs text-info flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                        Down
+                    </span>
+                    <span class="font-mono text-sm font-bold" id="net-down">0 B/s</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate__animated animate__fadeInUp animate__delay-1s">
+    <div class="card bg-base-100/50 backdrop-blur shadow-xl border border-base-content/5">
+        <div class="card-body p-0 pt-4">
+            <h3 class="card-title text-xs px-6 mb-0 text-base-content/50 uppercase">CPU History</h3>
+            <div id="cpuChart" class="w-full h-64"></div>
+        </div>
+    </div>
+    <div class="card bg-base-100/50 backdrop-blur shadow-xl border border-base-content/5">
+        <div class="card-body p-0 pt-4">
+            <h3 class="card-title text-xs px-6 mb-0 text-base-content/50 uppercase">RAM History</h3>
+            <div id="ramChart" class="w-full h-64"></div>
+        </div>
+    </div>
+    <div class="card bg-base-100/50 backdrop-blur shadow-xl border border-base-content/5">
+        <div class="card-body p-0 pt-4">
+            <h3 class="card-title text-xs px-6 mb-0 text-base-content/50 uppercase">Disk History</h3>
+            <div id="diskChart" class="w-full h-64"></div>
+        </div>
+    </div>
+</div>
+{{ end }}

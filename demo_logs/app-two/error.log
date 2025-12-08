@@ -1,0 +1,5 @@
+2023-12-08 10:22:11 [ERROR] Connection timed out to database
+2023-12-08 11:00:00 [ERROR] Failed to connect to external API
+2024-01-15 14:32:00 [ERROR] Failed to process payment transaction
+2024-01-15 14:35:00 [ERROR] API rate limit exceeded
+2024-01-15 14:40:00 [FATAL] Critical system failure detected

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Monitor</title>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 hover:bg-base-300; }
+        .sidebar-link.active { @apply bg-primary text-primary-content font-medium shadow-md; }
+    </style>
+</head>
+<body class="bg-base-300 min-h-screen text-base-content antialiased">
+
+    <div class="drawer lg:drawer-open">
+        <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
+        <div class="drawer-content flex flex-col p-8 gap-6">
+            <!-- Page content here -->
+            <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden mb-4 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                Menu
+            </label>
+            
+            {{ yield body() }}
+
+        </div> 
+        <div class="drawer-side z-20">
+            <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label> 
+            <aside class="w-72 min-h-full bg-base-100/90 backdrop-blur-md text-base-content flex flex-col shadow-2xl border-r border-base-content/5">
+                <div class="p-6 pb-2">
+                    <div class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2">Local Monitor</div>
+                    <div class="text-xs font-medium opacity-50 px-2 mt-1">System Dashboard</div>
+                </div>
+                <div class="divider my-2"></div>
+                <ul class="menu p-4 gap-2 flex-1 text-base">
+                    <li><a href="/" class="sidebar-link {{ if isset(current_page) && current_page == "dashboard" }}active{{ end }}">Dashboard</a></li>
+                    <li><a href="/logs" class="sidebar-link {{ if isset(current_page) && current_page == "logs" }}active{{ end }}">Logs</a></li>
+                    <li><a href="/processes" class="sidebar-link {{ if isset(current_page) && current_page == "processes" }}active{{ end }}">Processes</a></li>
+                    <li><a href="/services" class="sidebar-link {{ if isset(current_page) && current_page == "services" }}active{{ end }}">Services</a></li>
+                    <li><a href="/alerts" class="sidebar-link {{ if isset(current_page) && current_page == "alerts" }}active{{ end }}">Alerts</a></li>
+                </ul>
+                <div class="p-4 border-t border-base-300/50">
+                    <a href="/logout" class="btn btn-error btn-outline w-full gap-2 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                        Logout
+                    </a>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="/public/js/main.js"></script>
+    {{ yield script() }}
+</body>
+</html>
