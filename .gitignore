@@ -4,4 +4,5 @@ monitor.db
 /storage
 .DS_Store
 .vscode
-config.yaml
+monitor-agent
+user-cli

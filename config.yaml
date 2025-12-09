@@ -1,0 +1,26 @@
+apps:
+  - name: "System Services"
+    service_name: "system"
+    logs:
+      - name: "Nginx"
+        path: "./demo_logs/nginx/"
+      - name: "System Log"
+        path: "/var/log/system.log"
+      - name: "Install Log"
+        path: "/var/log/install.log"
+      - name: "WiFi Log"
+        path: "/var/log/wifi.log"
+
+  - name: "App One"
+    service_name: "app-one"
+    logs:
+      - name: "Application"
+        path: "./demo_logs/app/app.log"
+      - name: "Error"
+        path: "./demo_logs/app/error.log"
+
+  - name: "App Two"
+    service_name: "app-two"
+    logs:
+      - name: "Monitor Agent"
+        path: "./demo_logs/app-two/app.log"

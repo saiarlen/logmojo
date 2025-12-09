@@ -24,7 +24,11 @@ func main() {
 	}
 
 	// 2. Init DB
-	if err := db.Init("monitor.db"); err != nil {
+	dbPath := config.AppConfigData.Database.Path
+	if dbPath == "" {
+		dbPath = "monitor.db" // fallback
+	}
+	if err := db.Init(dbPath); err != nil {
 		log.Fatalf("Failed to init DB: %v", err)
 	}
 

@@ -1,284 +1,780 @@
-{{ extends "layouts/main" }}
-
-{{ block script() }}
+{{ extends "layouts/main" }} {{ block script() }}
 <script>
-    let state = {
-        q: '',
-        app: '',
-        logSource: '', 
-        file: '',
-        level: '',
-        logs: [],
-        files: [],
-        isLoading: false
+  let state = {
+    q: "",
+    app: "",
+    logSource: "",
+    file: "",
+    level: "",
+    logs: [],
+    files: [],
+    isLoading: false,
+    isLiveStreaming: false,
+    websocket: null,
+  };
+
+  async function init() {
+    await loadApps();
+  }
+
+  async function loadApps() {
+    try {
+      const response = await fetch("/api/apps");
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 302) {
+          window.location.href = "/logout";
+          return;
+        }
+        throw new Error("Failed to load apps");
+      }
+      const apps = await response.json();
+      const list = document.getElementById("app-list");
+      list.innerHTML = "";
+
+      if (apps && apps.length > 0) {
+        apps.forEach((app) => {
+          // App Category
+          const details = document.createElement("details");
+          details.open = true;
+          details.className = "group";
+
+          const summary = document.createElement("summary");
+          summary.className =
+            "flex items-center justify-between p-2 hover:bg-base-200 cursor-pointer rounded-lg text-xs font-bold uppercase tracking-wider opacity-60";
+          summary.innerText = app.name;
+          details.appendChild(summary);
+
+          const ul = document.createElement("ul");
+          ul.className = "pl-2 mt-1 space-y-0.5";
+
+          app.logs.forEach((log) => {
+            const li = document.createElement("li");
+            li.appendChild(createSourceBtn(app.name, log.name));
+            ul.appendChild(li);
+          });
+
+          details.appendChild(ul);
+          list.appendChild(details);
+        });
+      } else {
+        list.innerHTML =
+          '<div class="p-4 text-xs opacity-50">No apps configured</div>';
+      }
+    } catch (e) {
+      console.error("Failed to load apps", e);
+      document.getElementById("app-list").innerHTML =
+        '<div class="p-4 text-xs text-error">Error loading apps</div>';
+    }
+  }
+
+  function createSourceBtn(appName, logName) {
+    const btn = document.createElement("button");
+    btn.className =
+      "w-full text-left px-3 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-md transition-all flex items-center gap-2 log-source-btn";
+    btn.dataset.app = appName;
+    btn.dataset.log = logName;
+    btn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            <span class="truncate">${logName}</span>
+        `;
+
+    btn.onclick = async () => {
+      // Reset UI
+      document.querySelectorAll(".log-source-btn").forEach((b) => {
+        b.className =
+          "w-full text-left px-3 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-md transition-all flex items-center gap-2 log-source-btn";
+      });
+      // Active state
+      btn.className =
+        "w-full text-left px-3 py-2 text-sm text-primary bg-primary/10 font-medium rounded-md transition-all flex items-center gap-2 log-source-btn shadow-sm ring-1 ring-primary/20";
+
+      state.app = appName;
+      state.logSource = logName;
+      state.file = "";
+
+      // Update Header Title
+      document.getElementById(
+        "current-log-title"
+      ).innerHTML = `<span class="opacity-50">${appName} /</span> ${logName}`;
+
+      // Load Files
+      await loadFiles(appName, logName);
+
+      searchLogs();
     };
+    return btn;
+  }
 
-    async function init() {
-        await loadApps();
-    }
+  async function loadFiles(appName, logName) {
+    const selectorContainer = document.getElementById("file-selector-wrapper");
+    selectorContainer.innerHTML = "";
 
-    async function loadApps() {
-        try {
-            const response = await fetch('/api/apps');
-            const apps = await response.json();
-            const list = document.getElementById('app-list');
-            list.innerHTML = '';
+    try {
+      const res = await fetch(
+        `/api/logs/files?app=${encodeURIComponent(
+          appName
+        )}&log=${encodeURIComponent(logName)}`
+      );
+      if (!res.ok) throw new Error("Failed");
+      state.files = await res.json();
 
-            if (apps && apps.length > 0) {
-                 apps.forEach(app => {
-                    // App Category
-                    const group = document.createElement('div');
-                    group.className = 'mb-1';
-                    
-                    const header = document.createElement('div');
-                    header.className = 'px-4 py-2 text-xs font-bold uppercase tracking-wider opacity-50 mt-2';
-                    header.innerText = app.name;
-                    group.appendChild(header);
-
-                    // Log Sources
-                    app.logs.forEach(log => {
-                        const btn = createSourceBtn(app.name, log.name);
-                        group.appendChild(btn);
-                    });
-                    
-                    list.appendChild(group);
-                });
-            } else {
-                list.innerHTML = '<div class="p-4 text-xs opacity-50">No apps configured</div>';
-            }
-        } catch (e) {
-            console.error("Failed to load apps", e);
-        }
-    }
-
-    function createSourceBtn(appName, logName) {
-        const btn = document.createElement('button');
-        btn.className = 'w-full text-left px-4 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-lg transition-colors flex items-center gap-2 log-source-btn';
-        btn.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-            ${logName}
-        `;
-        
-        btn.onclick = async () => {
-             // Reset UI
-            document.querySelectorAll('.log-source-btn').forEach(b => {
-                b.classList.remove('bg-primary/10', 'text-primary', 'font-medium');
-                b.classList.add('text-base-content/70');
-            });
-            btn.classList.remove('text-base-content/70');
-            btn.classList.add('bg-primary/10', 'text-primary', 'font-medium');
-            
-            state.app = appName;
-            state.logSource = logName;
-            state.file = ''; 
-            
-            // Load Files
-            await loadFiles(appName, logName);
-            
-            searchLogs();
+      if (state.files && state.files.length > 0) {
+        const select = document.createElement("select");
+        select.className =
+          "select select-sm select-bordered w-full max-w-xs text-xs";
+        select.onchange = (e) => {
+          state.file = e.target.value;
+          searchLogs();
         };
-        return btn;
-    }
 
-    async function loadFiles(appName, logName) {
-        const selectorContainer = document.getElementById('file-selector-wrapper');
-        selectorContainer.innerHTML = ''; // Clear
+        const allOpt = document.createElement("option");
+        allOpt.value = "";
+        allOpt.text = "Latest / Active Log";
+        select.appendChild(allOpt);
 
-        try {
-            const res = await fetch(`/api/logs/files?app=${encodeURIComponent(appName)}&log=${encodeURIComponent(logName)}`);
-            if(!res.ok) throw new Error("Failed");
-            state.files = await res.json();
-            
-            if (state.files && state.files.length > 0) {
-                // Render dropdown
-                const select = document.createElement('select');
-                select.className = 'select select-sm select-bordered w-full max-w-xs text-xs';
-                select.onchange = (e) => {
-                    state.file = e.target.value;
-                    searchLogs();
-                };
-
-                // "All Active" option
-                const allOpt = document.createElement('option');
-                allOpt.value = "";
-                allOpt.text = "Latest / Active";
-                select.appendChild(allOpt);
-
-                state.files.forEach(f => {
-                    const opt = document.createElement('option');
-                    opt.value = f.path;
-                    let txt = f.name;
-                    if(f.is_archive) txt += " (Archive)";
-                    opt.text = txt;
-                    select.appendChild(opt);
-                });
-                
-                selectorContainer.appendChild(select);
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    // Filters
-    document.querySelectorAll('.level-btn').forEach(btn => {
-        btn.onclick = () => {
-            const val = btn.dataset.value;
-            if (state.level === val) {
-                state.level = '';
-                btn.classList.remove('btn-active');
-            } else {
-                document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('btn-active'));
-                state.level = val;
-                btn.classList.add('btn-active');
-            }
-            searchLogs();
-        };
-    });
-
-    let timeout;
-    document.getElementById('search-input').addEventListener('input', (e) => {
-        clearTimeout(timeout);
-        state.q = e.target.value;
-        timeout = setTimeout(searchLogs, 300);
-    });
-
-    async function searchLogs() {
-        if (!state.app || !state.logSource) {
-            console.log('No app or log source selected');
-            return;
-        }
-
-        state.isLoading = true;
-        renderLoading();
-
-        try {
-            const params = new URLSearchParams({
-                q: state.q,
-                app: state.app,
-                log: state.logSource,
-                file: state.file,
-                level: state.level,
-                limit: 500
-            });
-            console.log('Searching logs:', params.toString());
-            const res = await fetch(`/api/logs/search?${params}`);
-            
-            if (!res.ok) {
-                const error = await res.json();
-                console.error('Search error:', error);
-                state.logs = [];
-            } else {
-                state.logs = await res.json();
-                console.log('Found logs:', state.logs.length);
-            }
-            
-            if(!state.logs || !Array.isArray(state.logs)) {
-                state.logs = [];
-            }
-        } catch (e) {
-            console.error('Search exception:', e);
-            state.logs = [];
-        } finally {
-            state.isLoading = false;
-            render();
-        }
-    }
-
-    function renderLoading() {
-        document.getElementById('log-container').innerHTML = 
-            '<div class="flex justify-center p-10"><span class="loading loading-spinner text-primary"></span></div>';
-    }
-
-    function render() {
-        const container = document.getElementById('log-container');
-        container.innerHTML = '';
-
-        if (state.logs.length === 0) {
-            container.innerHTML = '<div class="text-center opacity-50 mt-10 text-sm">No logs found matching criteria.</div>';
-            return;
-        }
-
-        const table = document.createElement('table');
-        table.className = 'table table-xs w-full font-mono';
-        table.innerHTML = `
-            <thead>
-                <tr>
-                    <th class="w-40">Time</th>
-                    <th class="w-24">Level</th>
-                    <th>Message</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        `;
-
-        const tbody = table.querySelector('tbody');
-        state.logs.forEach(log => {
-            const tr = document.createElement('tr');
-            
-            let levelClass = '';
-            if (log.level.includes('ERR') || log.level.includes('FATAL')) levelClass = 'text-error font-bold';
-            else if (log.level.includes('WARN')) levelClass = 'text-warning';
-            else levelClass = 'text-info';
-
-            // Highlight
-            let msg = log.message;
-            if (state.q) {
-                try {
-                    const regex = new RegExp(`(${state.q})`, 'gi');
-                    msg = msg.replace(regex, '<span class="bg-warning/20 text-warning">$1</span>');
-                } catch(e) {}
-            }
-
-            tr.innerHTML = `
-                <td class="whitespace-nowrap opacity-60">${new Date(log.timestamp).toLocaleString()}</td>
-                <td class="${levelClass}">${log.level}</td>
-                <td class="break-all">${msg}</td>
-            `;
-            tbody.appendChild(tr);
+        state.files.forEach((f) => {
+          const opt = document.createElement("option");
+          opt.value = f.path;
+          let txt = f.name;
+          if (f.is_archive) txt += " (Archive)";
+          opt.text = txt;
+          select.appendChild(opt);
         });
 
-        container.appendChild(table);
+        selectorContainer.appendChild(select);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Filters
+  document.querySelectorAll(".level-btn").forEach((btn) => {
+    btn.onclick = () => {
+      const val = btn.dataset.value;
+
+      // Reset all
+      document.querySelectorAll(".level-btn").forEach((b) => {
+        b.className =
+          "join-item btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 level-btn rounded-md transition-all";
+        if (b.dataset.value === "INFO")
+          b.classList.add("hover:text-green-400", "hover:bg-green-500/10");
+        if (b.dataset.value === "WARN")
+          b.classList.add("hover:text-yellow-400", "hover:bg-yellow-500/10");
+        if (b.dataset.value === "ERROR")
+          b.classList.add("hover:text-red-400", "hover:bg-red-500/10");
+      });
+
+      if (state.level === val) {
+        state.level = "";
+      } else {
+        state.level = val;
+        // Active Styles
+        btn.classList.remove(
+          "text-gray-500",
+          "hover:text-green-400",
+          "hover:text-yellow-400",
+          "hover:text-red-400",
+          "hover:bg-green-500/10",
+          "hover:bg-yellow-500/10",
+          "hover:bg-red-500/10"
+        );
+
+        if (val === "INFO") {
+          btn.classList.add(
+            "bg-green-500/20",
+            "text-green-400",
+            "font-bold",
+            "ring-1",
+            "ring-green-500/30"
+          );
+        } else if (val === "WARN") {
+          btn.classList.add(
+            "bg-yellow-500/20",
+            "text-yellow-400",
+            "font-bold",
+            "ring-1",
+            "ring-yellow-500/30"
+          );
+        } else if (val === "ERROR") {
+          btn.classList.add(
+            "bg-red-500/20",
+            "text-red-400",
+            "font-bold",
+            "ring-1",
+            "ring-red-500/30"
+          );
+        }
+      }
+      searchLogs();
+    };
+  });
+
+  let timeout;
+  document.getElementById("search-input").addEventListener("input", (e) => {
+    clearTimeout(timeout);
+    state.q = e.target.value;
+    timeout = setTimeout(searchLogs, 300);
+  });
+
+  async function searchLogs() {
+    if (!state.app || !state.logSource) return;
+
+    // Stop live streaming when searching
+    if (state.isLiveStreaming) {
+      stopLiveStream();
     }
 
-    init();
-</script>
-{{ end }}
+    state.isLoading = true;
+    renderLoading();
 
-{{ block body() }}
-<div class="flex h-[calc(100vh-6rem)] gap-4 animate__animated animate__fadeIn">
-    <!-- Sidebar -->
-    <div class="w-64 shrink-0 card bg-base-100 shadow-xl border border-base-content/5 flex flex-col">
-        <div class="p-4 border-b border-base-content/5 font-bold text-sm opacity-70">Source</div>
-        <div class="flex-1 overflow-auto p-2" id="app-list">
-            <!-- App list -->
-        </div>
-    </div>
+    try {
+      const params = new URLSearchParams({
+        q: state.q,
+        app: state.app,
+        log: state.logSource,
+        file: state.file,
+        level: state.level,
+        limit: 500,
+      });
+      const res = await fetch(`/api/logs/search?${params}`);
 
-    <!-- Main -->
-    <div class="flex-1 flex flex-col gap-4">
-        <!-- Toolbar -->
-        <div class="flex flex-wrap gap-4 items-center p-3 card bg-base-100 shadow-xl border border-base-content/5">
-             <!-- File Selector -->
-             <div id="file-selector-wrapper"></div>
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 302) {
+          window.location.href = "/logout";
+          return;
+        }
+        state.logs = [];
+      } else {
+        state.logs = await res.json();
+      }
 
-             <div class="flex-1 relative">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 absolute left-3 top-1/2 -translate-y-1/2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                <input type="text" id="search-input" placeholder="Search (Regex confirmed)" class="input input-sm input-bordered w-full pl-10" />
-            </div>
+      if (!state.logs || !Array.isArray(state.logs)) {
+        state.logs = [];
+      }
+    } catch (e) {
+      state.logs = [];
+    } finally {
+      state.isLoading = false;
+      render();
+    }
+  }
+
+  function renderLoading() {
+    document.getElementById("log-container").innerHTML =
+      '<div class="flex flex-col items-center justify-center py-20 opacity-50"><span class="loading loading-spinner loading-lg text-primary"></span><span class="mt-2 text-sm">Searching contents...</span></div>';
+  }
+
+  function render() {
+    const container = document.getElementById("log-container");
+    container.innerHTML = "";
+
+    if (state.logs.length === 0) {
+      let emptyMsg;
+      if (state.isLiveStreaming) {
+        emptyMsg = "Live streaming... waiting for new log entries";
+      } else if (state.q || state.level) {
+        emptyMsg = "No logs found matching criteria.";
+      } else {
+        emptyMsg = "Waiting for input...";
+      }
+
+      container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 opacity-30 select-none">
+                    <span class="font-mono text-sm">_ ${emptyMsg}</span>
+                    ${
+                      state.isLiveStreaming
+                        ? '<div class="mt-2"><span class="w-2 h-2 rounded-full bg-green-400 inline-block animate-pulse mr-2"></span><span class="text-xs text-green-400">LIVE</span></div>'
+                        : ""
+                    }
+                </div>
+            `;
+      return;
+    }
+
+    const table = document.createElement("table");
+    table.className = "w-full";
+    table.style.borderCollapse = "collapse";
+
+    // No header for clean look
+    const tbody = document.createElement("tbody");
+
+    state.logs.forEach((log) => {
+      const tr = document.createElement("tr");
+      tr.className =
+        "hover:bg-white/5 transition-all duration-200 group border-b border-white/5 cursor-pointer log-row";
+
+      let levelColor = "text-gray-400";
+      if (log.level.includes("ERR") || log.level.includes("FATAL")) {
+        levelColor = "text-red-400 font-semibold";
+      } else if (log.level.includes("WARN")) {
+        levelColor = "text-yellow-400 font-medium";
+      } else if (log.level.includes("INFO")) {
+        levelColor = "text-green-400";
+      } else if (log.level.includes("DEBUG")) {
+        levelColor = "text-blue-400";
+      }
+
+      let msg = log.message;
+      if (state.q) {
+        try {
+          const regex = new RegExp(`(${state.q})`, "gi");
+          msg = msg.replace(
+            regex,
+            '<span class="bg-yellow-500/30 text-yellow-200 font-semibold px-1 rounded border border-yellow-500/40">$1</span>'
+          );
+        } catch (e) {}
+      }
+
+      // Format timestamp in universal YYYY-MM-DD HH:MM:SS format
+      const timestamp = new Date(log.timestamp);
+      const year = timestamp.getFullYear();
+      const month = String(timestamp.getMonth() + 1).padStart(2, "0");
+      const day = String(timestamp.getDate()).padStart(2, "0");
+      const hours = String(timestamp.getHours()).padStart(2, "0");
+      const minutes = String(timestamp.getMinutes()).padStart(2, "0");
+      const seconds = String(timestamp.getSeconds()).padStart(2, "0");
+      const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+
+      // Enhanced log format with action buttons
+      tr.innerHTML = `
+                <td class="whitespace-nowrap w-44 text-gray-500 px-2 py-1 select-none font-mono text-[11px] tracking-tight">${formattedTime}</td>
+                <td class="${levelColor} w-16 px-2 py-1 select-none font-mono text-[11px] tracking-wider">${log.level}</td>
+                <td class="px-2 py-1 text-gray-300 font-mono text-xs leading-relaxed break-words relative group">
+                  ${msg}
+                  <div class="absolute right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                    <button class="btn btn-xs btn-ghost text-gray-500 hover:text-primary copy-btn" title="Copy message">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                      </svg>
+                    </button>
+                    <button class="btn btn-xs btn-ghost text-gray-500 hover:text-warning highlight-btn" title="Highlight row">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+            `;
             
-            <div class="join">
-                <button class="join-item btn btn-sm level-btn" data-value="INFO">Info</button>
-                <button class="join-item btn btn-sm level-btn" data-value="WARN">Warn</button>
-                <button class="join-item btn btn-sm level-btn" data-value="ERROR">Error</button>
-            </div>
+            // Add click handlers
+            const copyBtn = tr.querySelector('.copy-btn');
+            const highlightBtn = tr.querySelector('.highlight-btn');
+            
+            copyBtn.onclick = (e) => {
+              e.stopPropagation();
+              copyLogMessage(log, formattedTime);
+            };
+            
+            highlightBtn.onclick = (e) => {
+              e.stopPropagation();
+              toggleHighlight(tr);
+            };
+            
+      tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+  }
+
+  // Live Stream Toggle
+  document.getElementById("live-stream-btn").onclick = toggleLiveStream;
+
+  function toggleLiveStream() {
+    if (state.isLiveStreaming) {
+      stopLiveStream();
+    } else {
+      startLiveStream();
+    }
+  }
+
+  function startLiveStream() {
+    if (!state.app || !state.logSource) {
+      alert("Please select a log source first");
+      return;
+    }
+
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${protocol}//${
+      window.location.host
+    }/api/ws/logs?app=${encodeURIComponent(state.app)}&log=${encodeURIComponent(
+      state.logSource
+    )}`;
+
+    console.log("Connecting to WebSocket:", wsUrl);
+    state.websocket = new WebSocket(wsUrl);
+
+    state.websocket.onopen = () => {
+      console.log("WebSocket connected");
+      state.isLiveStreaming = true;
+      updateLiveStreamButton();
+      // Clear existing logs for live view
+      state.logs = [];
+      render();
+    };
+
+    state.websocket.onmessage = (event) => {
+      const line = event.data;
+      console.log("Received log line:", line);
+
+      if (line.trim()) {
+        // Check if it's an error message
+        if (
+          line.startsWith("Error:") ||
+          line.includes("not found") ||
+          line.includes("not accessible")
+        ) {
+          console.error("Stream error:", line);
+          alert("Live stream error: " + line);
+          stopLiveStream();
+          return;
+        }
+
+        // Parse the new log line
+        const newLog = {
+          app: state.app,
+          file: "live",
+          level: parseLogLevel(line),
+          message: line,
+          timestamp: new Date().toISOString(),
+        };
+
+        // Add to beginning of logs array (newest first)
+        state.logs.unshift(newLog);
+
+        // Keep only last 100 lines for performance
+        if (state.logs.length > 100) {
+          state.logs = state.logs.slice(0, 100);
+        }
+
+        render();
+
+        // Auto-scroll to top for new messages
+        const container = document.getElementById("log-container");
+        if (container) {
+          container.scrollTop = 0;
+        }
+      }
+    };
+
+    state.websocket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+      alert("WebSocket connection failed. Check console for details.");
+      stopLiveStream();
+    };
+
+    state.websocket.onclose = (event) => {
+      console.log("WebSocket closed:", event.code, event.reason);
+      stopLiveStream();
+    };
+  }
+
+  function stopLiveStream() {
+    if (state.websocket) {
+      state.websocket.close();
+      state.websocket = null;
+    }
+    state.isLiveStreaming = false;
+    updateLiveStreamButton();
+  }
+
+  function updateLiveStreamButton() {
+    const btn = document.getElementById("live-stream-btn");
+    const dot = btn.querySelector(".w-2");
+
+    if (state.isLiveStreaming) {
+      btn.className =
+        "btn btn-xs px-3 font-mono text-[10px] tracking-wider text-green-400 bg-green-900/20 border-green-500/30 rounded";
+      dot.className = "w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse";
+      btn.innerHTML =
+        '<span class="w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></span>LIVE';
+    } else {
+      btn.className =
+        "btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 hover:text-green-400 rounded border border-white/5";
+      btn.innerHTML =
+        '<span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>LIVE';
+    }
+  }
+
+  function parseLogLevel(line) {
+    if (line.match(/\b(ERROR|ERR|FATAL)\b/i)) return "ERROR";
+    if (line.match(/\b(WARN|WARNING)\b/i)) return "WARN";
+    if (line.match(/\b(INFO)\b/i)) return "INFO";
+    if (line.match(/\b(DEBUG)\b/i)) return "DEBUG";
+    return "INFO";
+  }
+
+  // Copy log message to clipboard
+  function copyLogMessage(log, timestamp) {
+    const logText = `[${timestamp}] [${log.level}] ${log.message}`;
+    navigator.clipboard.writeText(logText).then(() => {
+      showToast('Log message copied to clipboard', 'success');
+    }).catch(() => {
+      showToast('Failed to copy message', 'error');
+    });
+  }
+
+  // Toggle row highlight
+  function toggleHighlight(row) {
+    if (row.classList.contains('highlighted')) {
+      row.classList.remove('highlighted', 'bg-warning/20', 'border-l-4', 'border-warning');
+    } else {
+      row.classList.add('highlighted', 'bg-warning/20', 'border-l-4', 'border-warning');
+    }
+  }
+
+  // Show toast notification
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} fixed top-4 right-4 w-auto z-50 shadow-lg`;
+    toast.innerHTML = `<span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      toast.remove();
+    }, 3000);
+  }
+
+  // Screenshot capture of visible area only
+  function captureScreenshot() {
+    const container = document.getElementById('log-container');
+    
+    // Use modern Screen Capture API if available
+    if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+      navigator.mediaDevices.getDisplayMedia({ video: true })
+        .then(stream => {
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          video.play();
+          
+          video.addEventListener('loadedmetadata', () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            ctx.drawImage(video, 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = `logs-screenshot-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            stream.getTracks().forEach(track => track.stop());
+            showToast('Screenshot captured successfully', 'success');
+          });
+        })
+        .catch(() => {
+          // Fallback to simple canvas method
+          captureVisibleArea();
+        });
+    } else {
+      captureVisibleArea();
+    }
+  }
+  
+  // Fallback method to capture visible area
+  function captureVisibleArea() {
+    const container = document.getElementById('log-container');
+    const rect = container.getBoundingClientRect();
+    
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    
+    // Fill with dark background
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Add text indicating this is a basic capture
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '14px monospace';
+    ctx.fillText('Log Viewer Screenshot', 20, 30);
+    ctx.fillText(`Captured: ${new Date().toLocaleString()}`, 20, 50);
+    
+    const link = document.createElement('a');
+    link.download = `logs-screenshot-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    
+    showToast('Basic screenshot saved (use browser screenshot for better quality)', 'info');
+  }
+  
+  // Export logs as text file
+  function exportLogsAsText() {
+    if (state.logs.length === 0) {
+      showToast('No logs to export', 'warning');
+      return;
+    }
+    
+    const logText = state.logs.map(log => {
+      const timestamp = new Date(log.timestamp);
+      const formattedTime = timestamp.toISOString().slice(0, 19).replace('T', ' ');
+      return `[${formattedTime}] [${log.level}] ${log.message}`;
+    }).join('\n');
+    
+    const blob = new Blob([logText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `logs-export-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast('Logs exported successfully', 'success');
+  }
+
+  init();
+</script>
+{{ end }} {{ block body() }}
+<div class="flex h-[calc(100vh-6rem)] gap-0 bg-base-100">
+  <!-- Sidebar -->
+  <div class="w-64 shrink-0 bg-base-200 border-r border-base-300 flex flex-col">
+    <div class="p-4 border-b border-base-300">
+      <h2
+        class="font-bold text-xs tracking-widest text-base-content/60 uppercase font-mono flex items-center gap-2"
+      >
+        <span class="text-primary">></span> SOURCES
+      </h2>
+    </div>
+    <div class="flex-1 overflow-y-auto p-2" id="app-list">
+      <!-- App list populated by JS -->
+      <div class="p-4 flex justify-center">
+        <span class="loading loading-dots loading-sm opacity-20"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col min-w-0 bg-base-100">
+    <!-- Toolbar -->
+    <div
+      class="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-gradient-to-r from-[#111] via-[#141414] to-[#111] shrink-0 gap-6 shadow-lg"
+    >
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <div id="file-selector-wrapper" class="h-8"></div>
+        <div
+          class="h-4 w-px bg-gradient-to-b from-transparent via-white/20 to-transparent mx-2"
+        ></div>
+        <span
+          class="text-xs font-mono text-gray-400 truncate flex items-center gap-2"
+          id="current-log-title"
+        >
+          <span class="opacity-30">SELECT SOURCE</span>
+        </span>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <!-- Search -->
+        <div class="relative w-72 group">
+          <div
+            class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 text-gray-500 group-focus-within:text-primary transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search logs..."
+            class="input input-sm w-full pl-10 font-mono text-xs bg-[#1a1a1a] border border-white/10 focus:border-primary/60 focus:bg-[#222] transition-all rounded-lg text-gray-300 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-inner"
+          />
+          <div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+            <kbd
+              class="kbd kbd-xs font-mono bg-white/5 border-white/10 text-gray-500 hidden md:inline-flex"
+              >/</kbd
+            >
+          </div>
         </div>
 
-        <!-- Logs -->
-        <div class="flex-1 card bg-base-100 shadow-xl border border-base-content/5 overflow-hidden">
-            <div class="flex-1 overflow-auto p-0" id="log-container">
-            </div>
+        <!-- Live Stream Toggle -->
+        <button
+          id="live-stream-btn"
+          class="btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 hover:text-green-400 rounded-lg border border-white/10 hover:border-green-500/30 transition-all shadow-sm hover:shadow-green-500/20"
+        >
+          <span class="w-2 h-2 rounded-full bg-gray-500 mr-1"></span>
+          LIVE
+        </button>
+
+        <!-- Screenshot Button -->
+        <button
+          onclick="captureScreenshot()"
+          class="btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 hover:text-purple-400 rounded-lg border border-white/10 hover:border-purple-500/30 transition-all shadow-sm hover:shadow-purple-500/20"
+          title="Capture Screenshot"
+        >
+          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          CAPTURE
+        </button>
+
+        <!-- Export Button -->
+        <button
+          onclick="exportLogsAsText()"
+          class="btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 hover:text-blue-400 rounded-lg border border-white/10 hover:border-blue-500/30 transition-all shadow-sm hover:shadow-blue-500/20"
+          title="Export Logs as Text File"
+        >
+          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          EXPORT
+        </button>
+
+        <!-- Filters -->
+        <div
+          class="join bg-gradient-to-r from-[#1a1a1a] to-[#1e1e1e] p-1 rounded-lg border border-white/10 shadow-md"
+        >
+          <button
+            class="join-item btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 hover:text-green-400 hover:bg-green-500/10 level-btn rounded-md transition-all"
+            data-value="INFO"
+          >
+            INFO
+          </button>
+          <button
+            class="join-item btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 hover:text-yellow-400 hover:bg-yellow-500/10 level-btn rounded-md transition-all"
+            data-value="WARN"
+          >
+            WARN
+          </button>
+          <button
+            class="join-item btn btn-xs btn-ghost px-3 font-mono text-[10px] tracking-wider text-gray-500 hover:text-red-400 hover:bg-red-500/10 level-btn rounded-md transition-all"
+            data-value="ERROR"
+          >
+            ERR
+          </button>
         </div>
+      </div>
     </div>
+
+    <!-- Logs Viewport -->
+    <div class="flex-1 overflow-hidden relative bg-[#0a0a0a] text-gray-200">
+      <div
+        class="absolute inset-0 overflow-auto scroll-smooth p-4"
+        id="log-container"
+      >
+        <div
+          class="h-full flex flex-col items-center justify-center opacity-30 select-none"
+        >
+          <span class="text-4xl mb-4 font-thin text-gray-600">_</span>
+          <p class="text-xs text-gray-500">SELECT_SOURCE_TO_INIT</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {{ end }}

@@ -19,7 +19,23 @@ func Handler(c *websocket.Conn) {
 		if app.Name == appName {
 			for _, l := range app.Logs {
 				if l.Name == logName {
-					logPath = l.Path
+					// Get the actual file path (handle directories)
+					files, err := logs.ListFiles(appName, logName)
+					if err == nil && len(files) > 0 {
+						// Use the first non-archive file
+						for _, f := range files {
+							if !f.IsArchive {
+								logPath = f.Path
+								break
+							}
+						}
+						if logPath == "" && len(files) > 0 {
+							logPath = files[0].Path // Fallback to first file
+						}
+					} else {
+						// Direct file path
+						logPath = l.Path
+					}
 					break
 				}
 			}
@@ -27,7 +43,7 @@ func Handler(c *websocket.Conn) {
 	}
 
 	if logPath == "" {
-		c.WriteMessage(websocket.TextMessage, []byte("Log not found"))
+		c.WriteMessage(websocket.TextMessage, []byte("Log file not found or not accessible"))
 		c.Close()
 		return
 	}
@@ -37,8 +53,10 @@ func Handler(c *websocket.Conn) {
 
 	lines := make(chan string)
 	go func() {
+		log.Printf("Starting stream for: %s", logPath)
 		if err := logs.StreamLog(ctx, logPath, lines); err != nil {
-			log.Println("Error streaming log:", err)
+			log.Printf("Error streaming log %s: %v", logPath, err)
+			c.WriteMessage(websocket.TextMessage, []byte("Error: "+err.Error()))
 		}
 		close(lines)
 	}()

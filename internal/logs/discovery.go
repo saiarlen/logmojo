@@ -69,11 +69,7 @@ func ListFiles(appName, logName string) ([]LogFile, error) {
 			fullPath := filepath.Join(targetPath, e.Name())
 			name := strings.ToLower(e.Name())
 			
-			if !strings.Contains(name, ".log") &&
-				!strings.HasSuffix(name, ".txt") &&
-				!strings.HasSuffix(name, ".gz") &&
-				!strings.HasSuffix(name, ".out") &&
-				!strings.HasSuffix(name, ".err") {
+			if !isLogFile(name) {
 				continue
 			}
 
@@ -126,10 +122,62 @@ func ListFiles(appName, logName string) ([]LogFile, error) {
 	return files, nil
 }
 
+// isLogFile checks if a file is a log file (including archives)
+func isLogFile(name string) bool {
+	lower := strings.ToLower(name)
+	
+	// Common log file patterns
+	logPatterns := []string{".log", ".txt", ".out", ".err", ".trace"}
+	for _, pattern := range logPatterns {
+		if strings.Contains(lower, pattern) {
+			return true
+		}
+	}
+	
+	// Archive extensions
+	archiveExts := []string{".gz", ".bz2", ".xz", ".lz4", ".zip"}
+	for _, ext := range archiveExts {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+	
+	// Numbered rotations (app.log.1, app.log.2, etc.)
+	if strings.Contains(lower, ".log.") {
+		return true
+	}
+	
+	// Date-based rotations (app.log.2024-01-15)
+	if strings.Contains(lower, ".log.") && (strings.Contains(lower, "-") || strings.Contains(lower, "_")) {
+		return true
+	}
+	
+	return false
+}
+
 func isArchive(name string) bool {
-	return strings.HasSuffix(name, ".gz") ||
-		strings.HasSuffix(name, ".zip") ||
-		strings.HasSuffix(name, ".1") ||
-		strings.HasSuffix(name, ".2") ||
-		strings.HasSuffix(name, ".old")
+	lower := strings.ToLower(name)
+	
+	// Compressed archives
+	compressedExts := []string{".gz", ".bz2", ".xz", ".lz4", ".zip"}
+	for _, ext := range compressedExts {
+		if strings.HasSuffix(lower, ext) {
+			return true
+		}
+	}
+	
+	// Rotated files
+	rotationPatterns := []string{".1", ".2", ".3", ".4", ".5", ".old", ".bak"}
+	for _, pattern := range rotationPatterns {
+		if strings.HasSuffix(lower, pattern) {
+			return true
+		}
+	}
+	
+	// Date-based rotations
+	if strings.Contains(lower, ".log.") && !strings.HasSuffix(lower, ".log") {
+		return true
+	}
+	
+	return false
 }

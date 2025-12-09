@@ -29,7 +29,8 @@ func Setup(app *fiber.App) {
 	app.Use(auth.RequireLogin)
 
 	app.Get("/login", func(c *fiber.Ctx) error {
-		if c.Cookies("auth_session") == "valid" {
+		token := c.Cookies("auth_token")
+		if token != "" {
 			return c.Redirect("/")
 		}
 		return c.Render("login", nil)
@@ -234,7 +235,8 @@ func Setup(app *fiber.App) {
 	// WebSocket
 	app.Use("/api/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
-			if c.Cookies("auth_session") != "valid" {
+			token := c.Cookies("auth_token")
+			if token == "" {
 				return fiber.ErrUnauthorized
 			}
 			c.Locals("allowed", true)

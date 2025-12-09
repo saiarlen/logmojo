@@ -1,6 +1,15 @@
 const API_BASE = '/api';
 const AUTH_TOKEN = 'secret-key'; // In a real app, this would be handled better
 
+function checkAuth(response) {
+    if (response.status === 401 || response.status === 302) {
+        console.log('Session invalid, redirecting to login...');
+        window.location.href = '/logout';
+        return false;
+    }
+    return true;
+}
+
 async function fetchAPI(endpoint, options = {}) {
     const headers = {
         'X-Auth-Token': AUTH_TOKEN,
@@ -12,6 +21,10 @@ async function fetchAPI(endpoint, options = {}) {
         ...options,
         headers,
     });
+
+    if (!checkAuth(res)) {
+        throw new Error('Unauthorized');
+    }
 
     if (!res.ok) {
         throw new Error(`API Error: ${res.statusText}`);

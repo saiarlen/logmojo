@@ -6,6 +6,8 @@ require (
 	github.com/gofiber/contrib/websocket v1.3.0
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/gofiber/template/jet/v2 v2.1.13
+	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/nxadm/tail v1.4.11
 	github.com/shirou/gopsutil/v3 v3.24.1

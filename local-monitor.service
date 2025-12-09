@@ -9,7 +9,7 @@ ExecStart=/usr/local/bin/monitor-agent
 WorkingDirectory=/usr/local/share/local-monitor
 Restart=always
 RestartSec=5
-Environment=MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:9000
+Environment=MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:7005
 
 [Install]
 WantedBy=multi-user.target
