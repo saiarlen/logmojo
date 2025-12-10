@@ -2,9 +2,13 @@ package ws
 
 import (
 	"context"
+	"encoding/json"
 	"local-monitor/internal/config"
 	"local-monitor/internal/logs"
+	"local-monitor/internal/metrics"
+	"local-monitor/internal/processes"
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/websocket"
 )
@@ -74,6 +78,63 @@ func Handler(c *websocket.Conn) {
 	for line := range lines {
 		if err := c.WriteMessage(websocket.TextMessage, []byte(line)); err != nil {
 			break
+		}
+	}
+}
+
+type ProcessData struct {
+	Processes   []processes.ProcessInfo `json:"processes"`
+	TotalCPU    float64                 `json:"total_cpu"`
+	TotalMemory float64                 `json:"total_memory"`
+	Timestamp   time.Time               `json:"timestamp"`
+}
+
+func ProcessesHandler(c *websocket.Conn) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	// Handle client disconnect
+	go func() {
+		for {
+			if _, _, err := c.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}()
+
+	for {
+		select {
+		case <-ticker.C:
+			// Get processes
+			procs, err := processes.ListProcesses()
+			if err != nil {
+				log.Printf("Error getting processes: %v", err)
+				continue
+			}
+
+			// Get system metrics for total CPU/Memory
+			sysMetrics, err := metrics.GetHostMetrics()
+			if err != nil {
+				log.Printf("Error getting system metrics: %v", err)
+				continue
+			}
+
+			data := ProcessData{
+				Processes:   procs,
+				TotalCPU:    sysMetrics.CPUPercent,
+				TotalMemory: sysMetrics.RAMPercent,
+				Timestamp:   time.Now(),
+			}
+
+			jsonData, err := json.Marshal(data)
+			if err != nil {
+				log.Printf("Error marshaling process data: %v", err)
+				continue
+			}
+
+			if err := c.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+				return
+			}
 		}
 	}
 }

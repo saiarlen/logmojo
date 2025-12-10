@@ -2,60 +2,406 @@
 
 {{ block script() }}
 <script>
-    async function loadServices() {
-        const apps = await fetchAPI('/apps');
-        const container = document.getElementById('services-grid');
-        container.innerHTML = '';
+  let services = [];
+  let refreshInterval;
+  let viewMode = 'table'; // 'table' or 'cards'
 
-        apps.forEach(app => {
-            const div = document.createElement('div');
-            div.className = 'card bg-base-100 shadow-xl';
-            div.innerHTML = `
-                <div class="card-body">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="card-title">${app.name}</h2>
-                        <div class="badge badge-success badge-outline">Active</div>
-                    </div>
-                    <p class="text-sm text-neutral-content">Service: <span class="font-mono text-base-content">${app.service_name}</span></p>
-                    <p class="text-sm text-neutral-content mb-4">Logs: ${app.logs.length} files</p>
-                    <div class="card-actions justify-end">
-                        <button class="btn btn-primary w-full" onclick="restartService('${app.service_name}', this)">Restart Service</button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(div);
-        });
+  async function loadServices() {
+    try {
+      services = await fetchAPI('/services');
+      renderServices();
+    } catch (e) {
+      showToast('Failed to load services: ' + e.message, 'error');
+    }
+  }
+
+  function renderServices() {
+    if (viewMode === 'table') {
+      renderTableView();
+    } else {
+      renderCardView();
+    }
+  }
+
+  function renderTableView() {
+    const container = document.getElementById('services-container');
+    
+    if (services.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4 opacity-20">⚙️</div>
+          <p class="text-lg text-base-content/60">No services configured</p>
+        </div>
+      `;
+      return;
     }
 
-    async function restartService(name, btn) {
-        if (!confirm(`Restart ${name}?`)) return;
+    container.innerHTML = `
+      <div class="overflow-x-auto bg-base-100 rounded-lg shadow-sm border border-base-300">
+        <table class="table w-full">
+          <thead class="bg-base-200">
+            <tr>
+              <th class="font-semibold text-base-content text-left">Service Name</th>
+              <th class="font-semibold text-base-content text-center">Status</th>
+              <th class="font-semibold text-base-content text-center">CPU</th>
+              <th class="font-semibold text-base-content text-center">Memory</th>
+              <th class="font-semibold text-base-content text-center">PID</th>
+              <th class="font-semibold text-base-content text-center">Uptime</th>
+              <th class="font-semibold text-base-content text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${services.map(service => createTableRow(service)).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function createTableRow(service) {
+    const statusColor = getStatusColor(service.status);
+    
+    return `
+      <tr class="hover:bg-base-50 border-b border-base-200">
+        <td class="py-4">
+          <div>
+            <div class="font-medium text-base-content">${service.name}</div>
+            <div class="text-xs text-base-content/50 mt-1">${service.description}</div>
+          </div>
+        </td>
+        <td class="text-center py-4">
+          <span class="font-bold text-sm ${getStatusTextColor(service.status)}">
+            ${service.status.toUpperCase()}
+          </span>
+        </td>
+        <td class="text-center py-4">
+          <span class="font-mono text-sm">${service.cpu_usage || '-'}</span>
+        </td>
+        <td class="text-center py-4">
+          <span class="font-mono text-sm">${service.memory_usage || '-'}</span>
+        </td>
+        <td class="text-center py-4">
+          <span class="font-mono text-sm">${service.pid || '-'}</span>
+        </td>
+        <td class="text-center py-4">
+          <span class="font-mono text-sm">${service.uptime || '-'}</span>
+        </td>
+        <td class="text-center py-4">
+          <div class="flex justify-center gap-1">
+            <button class="btn btn-xs text-white bg-green-600 hover:bg-green-700 border-green-600" 
+                    onclick="serviceAction('start', '${service.service_name}', this)" 
+                    ${service.active ? 'disabled' : ''}>
+              Start
+            </button>
+            <button class="btn btn-xs text-white bg-red-600 hover:bg-red-700 border-red-600" 
+                    onclick="serviceAction('stop', '${service.service_name}', this)"
+                    ${!service.active ? 'disabled' : ''}>
+              Stop
+            </button>
+            <button class="btn btn-xs text-white bg-blue-600 hover:bg-blue-700 border-blue-600" 
+                    onclick="serviceAction('restart', '${service.service_name}', this)">
+              Restart
+            </button>
+            <button class="btn btn-xs text-white bg-purple-600 hover:bg-purple-700 border-purple-600" 
+                    onclick="viewServiceLogs('${service.service_name}')">
+              View Logs
+            </button>
+            <button class="btn btn-xs text-white bg-gray-600 hover:bg-gray-700 border-gray-600" 
+                    onclick="copyConfigPath('${service.config_path}')">
+              Config
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  function renderCardView() {
+    const container = document.getElementById('services-container');
+    
+    if (services.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4 opacity-20">⚙️</div>
+          <p class="text-lg text-base-content/60">No services configured</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        ${services.map(service => createServiceCard(service)).join('')}
+      </div>
+    `;
+  }
+
+  function createServiceCard(service) {
+    const statusTextColor = getStatusTextColor(service.status);
+    
+    return `
+      <div class="bg-base-100 rounded-lg border border-base-300 hover:border-primary/30 transition-all duration-200 p-4">
+        <!-- Header -->
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <h3 class="font-bold text-base text-base-content">${service.name}</h3>
+            <p class="text-xs text-base-content/60 mt-1">${service.description}</p>
+          </div>
+          <span class="font-bold text-xs ${statusTextColor}">
+            ${service.status.toUpperCase()}
+          </span>
+        </div>
         
-        const originalText = btn.innerText;
-        btn.innerText = 'Restarting...';
-        btn.disabled = true;
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-4 gap-2 mb-3 text-xs">
+          <div class="text-center">
+            <div class="text-base-content/60">CPU</div>
+            <div class="font-mono font-medium">${service.cpu_usage || '-'}</div>
+          </div>
+          <div class="text-center">
+            <div class="text-base-content/60">RAM</div>
+            <div class="font-mono font-medium">${service.memory_usage || '-'}</div>
+          </div>
+          <div class="text-center">
+            <div class="text-base-content/60">PID</div>
+            <div class="font-mono font-medium">${service.pid || '-'}</div>
+          </div>
+          <div class="text-center">
+            <div class="text-base-content/60">Uptime</div>
+            <div class="font-mono font-medium">${service.uptime || '-'}</div>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-5 gap-1">
+          <button class="btn btn-xs text-white bg-green-600 hover:bg-green-700 border-green-600" 
+                  onclick="serviceAction('start', '${service.service_name}', this)" 
+                  ${service.active ? 'disabled' : ''}>
+            Start
+          </button>
+          <button class="btn btn-xs text-white bg-red-600 hover:bg-red-700 border-red-600" 
+                  onclick="serviceAction('stop', '${service.service_name}', this)"
+                  ${!service.active ? 'disabled' : ''}>
+            Stop
+          </button>
+          <button class="btn btn-xs text-white bg-blue-600 hover:bg-blue-700 border-blue-600" 
+                  onclick="serviceAction('restart', '${service.service_name}', this)">
+            Restart
+          </button>
+          <button class="btn btn-xs text-white bg-purple-600 hover:bg-purple-700 border-purple-600" 
+                  onclick="viewServiceLogs('${service.service_name}')">
+            Logs
+          </button>
+          <button class="btn btn-xs text-white bg-gray-600 hover:bg-gray-700 border-gray-600" 
+                  onclick="copyConfigPath('${service.config_path}')">
+            Config
+          </button>
+        </div>
+      </div>
+    `;
+  }
 
-        try {
-            await fetchAPI('/service/restart', {
-                method: 'POST',
-                body: JSON.stringify({ service_name: name })
-            });
-            alert('Restart command sent.');
-        } catch (e) {
-            alert('Error: ' + e.message);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
+  function getStatusColor(status) {
+    const colors = {
+      running: 'success',
+      inactive: 'warning', 
+      failed: 'error',
+      unknown: 'neutral'
+    };
+    return colors[status] || 'neutral';
+  }
+
+  function getStatusTextColor(status) {
+    const colors = {
+      running: 'text-green-600',
+      inactive: 'text-yellow-600', 
+      failed: 'text-red-600',
+      unknown: 'text-gray-600'
+    };
+    return colors[status] || 'text-gray-600';
+  }
+
+  function getStatusIcon(status) {
+    const icons = {
+      running: '🟢',
+      inactive: '🟡',
+      failed: '🔴',
+      unknown: '⚪'
+    };
+    return icons[status] || '⚪';
+  }
+
+  function toggleView() {
+    viewMode = viewMode === 'table' ? 'cards' : 'table';
+    const btn = document.getElementById('view-toggle-btn');
+    btn.innerHTML = viewMode === 'table' ? 
+      '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path></svg> Cards' :
+      '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h12a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6z"></path></svg> Table';
+    renderServices();
+  }
+
+  async function serviceAction(action, serviceName, btn) {
+    if (!confirm(`${action.toUpperCase()} ${serviceName}?`)) return;
+    
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span>';
+    btn.disabled = true;
+
+    try {
+      await fetchAPI(`/services/${action}`, {
+        method: 'POST',
+        body: JSON.stringify({ service_name: serviceName })
+      });
+      showToast(`${action.toUpperCase()} command sent successfully`, 'success');
+      setTimeout(loadServices, 2000);
+    } catch (e) {
+      showToast(`Failed to ${action} service: ` + e.message, 'error');
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
     }
+  }
 
-    loadServices();
+  function viewServiceLogs(serviceName) {
+    // Navigate to logs page - this will be handled by the logs page to show service-specific logs
+    window.location.href = `/logs?service=${serviceName}`;
+  }
+
+  function copyConfigPath(configPath) {
+    if (!configPath) {
+      showToast('No config path configured', 'warning');
+      return;
+    }
+    
+    navigator.clipboard.writeText(configPath).then(() => {
+      showToast(`Config path copied: ${configPath}`, 'success');
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = configPath;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showToast(`Config path copied: ${configPath}`, 'success');
+    });
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} fixed top-4 right-4 w-auto max-w-md z-50 shadow-lg`;
+    toast.innerHTML = `<span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+
+  function startAutoRefresh() {
+    refreshInterval = setInterval(loadServices, 10000);
+  }
+
+  function stopAutoRefresh() {
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+  }
+
+  function toggleAutoRefresh() {
+    const btn = document.getElementById('auto-refresh-btn');
+    if (refreshInterval) {
+      stopAutoRefresh();
+      btn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Auto Refresh: OFF
+      `;
+      btn.className = 'btn btn-ghost btn-sm border border-base-300 opacity-50';
+    } else {
+      startAutoRefresh();
+      btn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>
+        Auto Refresh: ON
+      `;
+      btn.className = 'btn btn-ghost btn-sm border border-green-300 text-green-600';
+    }
+  }
+
+  // Initialize
+  loadServices();
+  startAutoRefresh();
 </script>
 {{ end }}
 
 {{ block body() }}
-<h2 class="text-3xl font-bold mb-6">Services</h2>
+<div class="flex h-[calc(100vh-6rem)] flex-col bg-base-100">
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-base-200 to-base-300 border-b border-base-300">
+    <div class="flex items-center justify-between p-6">
+      <div>
+        <h1 class="text-2xl font-bold text-base-content flex items-center gap-2">
+          <span class="text-primary">⚙️</span> Services Manager
+        </h1>
+        <p class="text-base-content/70 text-sm mt-1">Monitor and manage system services</p>
+      </div>
+      <div class="flex gap-2">
+        <button id="view-toggle-btn" class="btn btn-ghost btn-sm" onclick="toggleView()">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+          </svg>
+          Cards
+        </button>
+        <button id="auto-refresh-btn" class="btn btn-ghost btn-sm border border-green-300 text-green-600" onclick="toggleAutoRefresh()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Auto Refresh: ON
+        </button>
+        <button class="btn btn-primary btn-sm" onclick="loadServices()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="services-grid">
-    <!-- Services here -->
+  <!-- Services Container -->
+  <div class="flex-1 overflow-auto p-6">
+    <div id="services-container">
+      <!-- Loading state -->
+      <div class="text-center py-16">
+        <span class="loading loading-dots loading-lg"></span>
+        <p class="mt-4 text-base-content/60">Loading services...</p>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- Logs Modal -->
+<dialog id="logs-modal" class="modal">
+  <div class="modal-box w-11/12 max-w-5xl h-3/4">
+    <form method="dialog">
+      <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+    </form>
+    <h3 id="logs-title" class="font-bold text-lg mb-4">Service Logs</h3>
+    <div class="bg-base-200 rounded-lg p-4 h-full overflow-auto">
+      <div id="logs-content" class="font-mono text-sm">
+        <!-- Logs content -->
+      </div>
+    </div>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
 {{ end }}

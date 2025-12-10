@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `mapstructure:"server"`
-	Database  DatabaseConfig  `mapstructure:"database"`
-	Security  SecurityConfig  `mapstructure:"security"`
-	Apps      []AppConfig     `mapstructure:"apps"`
-	Alerts    AlertsConfig    `mapstructure:"alerts"`
-	Notifiers NotifiersConfig `mapstructure:"notifiers"`
-	DevMode   bool            `mapstructure:"dev_mode"`
+	Server    ServerConfig     `mapstructure:"server"`
+	Database  DatabaseConfig   `mapstructure:"database"`
+	Security  SecurityConfig   `mapstructure:"security"`
+	Services  []ServiceConfig  `mapstructure:"services"`
+	Apps      []AppConfig      `mapstructure:"apps"`
+	Alerts    AlertsConfig     `mapstructure:"alerts"`
+	Notifiers NotifiersConfig  `mapstructure:"notifiers"`
+	DevMode   bool             `mapstructure:"dev_mode"`
 }
 
 type ServerConfig struct {
@@ -32,9 +33,19 @@ type SecurityConfig struct {
 }
 
 type AppConfig struct {
-	Name        string      `mapstructure:"name" json:"name"`
-	ServiceName string      `mapstructure:"service_name" json:"service_name"`
-	Logs        []LogConfig `mapstructure:"logs" json:"logs"`
+	Name        string          `mapstructure:"name" json:"name"`
+	ServiceName string          `mapstructure:"service_name" json:"service_name"`
+	Logs        []LogConfig     `mapstructure:"logs" json:"logs"`
+	Services    []ServiceConfig `mapstructure:"services" json:"services"`
+}
+
+type ServiceConfig struct {
+	Name        string `mapstructure:"name" json:"name"`
+	ServiceName string `mapstructure:"service_name" json:"service_name"`
+	Enabled     bool   `mapstructure:"enabled" json:"enabled"`
+	Description string `mapstructure:"description" json:"description"`
+	ConfigPath  string `mapstructure:"config_path" json:"config_path"`
+	LogPath     string `mapstructure:"log_path" json:"log_path"`
 }
 
 type LogConfig struct {

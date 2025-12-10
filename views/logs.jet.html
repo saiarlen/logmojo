@@ -15,6 +15,50 @@
 
   async function init() {
     await loadApps();
+    
+    // Check for service parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const serviceParam = urlParams.get('service');
+    if (serviceParam) {
+      await selectServiceFromParam(serviceParam);
+    }
+  }
+  
+  function getAppIcon(appName) {
+    if (appName.toLowerCase().includes('system')) {
+      // System icon
+      return `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+      </svg>`;
+    } else {
+      // Grid/App icon for regular apps
+      return `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+      </svg>`;
+    }
+  }
+
+  async function selectServiceFromParam(serviceName) {
+    // Wait for apps to be loaded first
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Find and activate the service menu item
+    const serviceButtons = document.querySelectorAll('[data-service]');
+    for (const btn of serviceButtons) {
+      if (btn.dataset.service === serviceName) {
+        // Reset all menu items first
+        document.querySelectorAll('.log-source-btn').forEach(b => {
+          b.className = 'w-full text-left px-3 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-md transition-all flex items-center gap-2 log-source-btn';
+        });
+        
+        // Set active state for this button
+        btn.className = 'w-full text-left px-3 py-2 text-sm text-primary bg-primary/10 font-medium rounded-md transition-all flex items-center gap-2 log-source-btn border-l-2 border-primary';
+        
+        // Trigger the click to load the service
+        btn.click();
+        break;
+      }
+    }
   }
 
   async function loadApps() {
@@ -33,28 +77,74 @@
 
       if (apps && apps.length > 0) {
         apps.forEach((app) => {
-          // App Category
-          const details = document.createElement("details");
-          details.open = true;
-          details.className = "group";
+          // App Category for Logs
+          if (app.logs && app.logs.length > 0) {
+            const details = document.createElement("details");
+            details.open = true;
+            details.className = "group";
 
-          const summary = document.createElement("summary");
-          summary.className =
-            "flex items-center justify-between p-2 hover:bg-base-200 cursor-pointer rounded-lg text-xs font-bold uppercase tracking-wider opacity-60";
-          summary.innerText = app.name;
-          details.appendChild(summary);
+            const summary = document.createElement("summary");
+            summary.className =
+              "flex items-center justify-between p-2 hover:bg-base-200 cursor-pointer rounded-lg text-xs font-bold uppercase tracking-wider opacity-60";
+            const iconSvg = getAppIcon(app.name);
+            summary.innerHTML = `
+              <div class="flex items-center gap-2">
+                ${iconSvg}
+                ${app.name}
+              </div>
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            `;
+            details.appendChild(summary);
 
-          const ul = document.createElement("ul");
-          ul.className = "pl-2 mt-1 space-y-0.5";
+            const ul = document.createElement("ul");
+            ul.className = "pl-2 mt-1 space-y-0.5";
 
-          app.logs.forEach((log) => {
-            const li = document.createElement("li");
-            li.appendChild(createSourceBtn(app.name, log.name));
-            ul.appendChild(li);
-          });
+            app.logs.forEach((log) => {
+              const li = document.createElement("li");
+              li.appendChild(createSourceBtn(app.name, log.name));
+              ul.appendChild(li);
+            });
 
-          details.appendChild(ul);
-          list.appendChild(details);
+            details.appendChild(ul);
+            list.appendChild(details);
+          }
+          
+          // Services as top-level dropdown
+          if (app.services && app.services.length > 0) {
+            const servicesDetails = document.createElement('details');
+            servicesDetails.open = true;
+            servicesDetails.className = 'group';
+            
+            const servicesSummary = document.createElement('summary');
+            servicesSummary.className = 'flex items-center justify-between p-2 hover:bg-base-200 cursor-pointer rounded-lg text-xs font-bold uppercase tracking-wider opacity-60';
+            servicesSummary.innerHTML = `
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                Other Services
+              </div>
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+            `;
+            servicesDetails.appendChild(servicesSummary);
+            
+            const servicesUl = document.createElement('ul');
+            servicesUl.className = 'pl-2 mt-1 space-y-0.5';
+            
+            app.services.forEach(service => {
+              const serviceLi = document.createElement('li');
+              serviceLi.appendChild(createServiceBtn(app.name, service));
+              servicesUl.appendChild(serviceLi);
+            });
+            
+            servicesDetails.appendChild(servicesUl);
+            list.appendChild(servicesDetails);
+          }
         });
       } else {
         list.innerHTML =
@@ -67,6 +157,44 @@
     }
   }
 
+  function createServiceBtn(appName, service) {
+    const btn = document.createElement('button');
+    btn.className = 'w-full text-left px-3 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-md transition-all flex items-center gap-2 log-source-btn';
+    btn.dataset.app = appName;
+    btn.dataset.service = service.service_name;
+    btn.innerHTML = `
+      <svg class="w-4 h-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
+      </svg>
+      <span class="truncate">${service.name}</span>
+    `;
+    
+    btn.onclick = async () => {
+      // Reset all menu items
+      document.querySelectorAll('.log-source-btn').forEach(b => {
+        b.className = 'w-full text-left px-3 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-md transition-all flex items-center gap-2 log-source-btn';
+      });
+      // Set active state
+      btn.className = 'w-full text-left px-3 py-2 text-sm text-primary bg-primary/10 font-medium rounded-md transition-all flex items-center gap-2 log-source-btn border-l-2 border-primary';
+      
+      state.app = appName;
+      state.logSource = `${service.name} Service Log`;
+      state.serviceLog = service;
+      state.file = '';
+      
+      // Update Header Title
+      document.getElementById('current-log-title').innerHTML = 
+        `<span class="opacity-50">${appName} /</span> ${service.name} Service Log`;
+      
+      // Load service log files
+      await loadServiceLogFiles(service);
+      searchLogs();
+    };
+    
+    return btn;
+  }
+  
   function createSourceBtn(appName, logName) {
     const btn = document.createElement("button");
     btn.className =
@@ -79,18 +207,19 @@
         `;
 
     btn.onclick = async () => {
-      // Reset UI
+      // Reset all menu items
       document.querySelectorAll(".log-source-btn").forEach((b) => {
         b.className =
           "w-full text-left px-3 py-2 text-sm text-base-content/70 hover:bg-base-200 hover:text-base-content rounded-md transition-all flex items-center gap-2 log-source-btn";
       });
-      // Active state
+      // Set active state
       btn.className =
-        "w-full text-left px-3 py-2 text-sm text-primary bg-primary/10 font-medium rounded-md transition-all flex items-center gap-2 log-source-btn shadow-sm ring-1 ring-primary/20";
+        "w-full text-left px-3 py-2 text-sm text-primary bg-primary/10 font-medium rounded-md transition-all flex items-center gap-2 log-source-btn border-l-2 border-primary";
 
       state.app = appName;
       state.logSource = logName;
       state.file = "";
+      state.serviceLog = null;
 
       // Update Header Title
       document.getElementById(
@@ -105,6 +234,44 @@
     return btn;
   }
 
+  async function loadServiceLogFiles(service) {
+    const selectorContainer = document.getElementById('file-selector-wrapper');
+    selectorContainer.innerHTML = '';
+    
+    try {
+      // For services, we create a virtual file list based on the service log path
+      const select = document.createElement('select');
+      select.className = 'select select-sm select-bordered w-full max-w-xs text-xs';
+      select.onchange = (e) => {
+        state.file = e.target.value;
+        searchLogs();
+      };
+      
+      const currentOpt = document.createElement('option');
+      currentOpt.value = service.log_path;
+      currentOpt.text = 'Current Log';
+      select.appendChild(currentOpt);
+      
+      // Add archive options (simulated)
+      const archiveOpt1 = document.createElement('option');
+      archiveOpt1.value = service.log_path + '.1';
+      archiveOpt1.text = 'Archive 1';
+      select.appendChild(archiveOpt1);
+      
+      const archiveOpt2 = document.createElement('option');
+      archiveOpt2.value = service.log_path + '.gz';
+      archiveOpt2.text = 'Archive (compressed)';
+      select.appendChild(archiveOpt2);
+      
+      selectorContainer.appendChild(select);
+      
+      // Set default to current log
+      state.file = service.log_path;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  
   async function loadFiles(appName, logName) {
     const selectorContainer = document.getElementById("file-selector-wrapper");
     selectorContainer.innerHTML = "";
@@ -229,24 +396,55 @@
     renderLoading();
 
     try {
-      const params = new URLSearchParams({
-        q: state.q,
-        app: state.app,
-        log: state.logSource,
-        file: state.file,
-        level: state.level,
-        limit: 500,
-      });
-      const res = await fetch(`/api/logs/search?${params}`);
-
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 302) {
-          window.location.href = "/logout";
-          return;
+      let endpoint, params;
+      
+      if (state.serviceLog) {
+        // For service logs, use journalctl API
+        params = new URLSearchParams({
+          service: state.serviceLog.service_name,
+          lines: 500
+        });
+        endpoint = `/api/services/${state.serviceLog.service_name}/logs?${params}`;
+        
+        const res = await fetch(endpoint);
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 302) {
+            window.location.href = "/logout";
+            return;
+          }
+          state.logs = [];
+        } else {
+          const data = await res.json();
+          // Convert journalctl output to log format
+          state.logs = data.logs.map((line, index) => ({
+            app: state.app,
+            file: state.serviceLog.service_name,
+            level: parseLogLevel(line),
+            message: line,
+            timestamp: new Date(Date.now() - (data.logs.length - index) * 1000).toISOString()
+          }));
         }
-        state.logs = [];
       } else {
-        state.logs = await res.json();
+        // Regular log search
+        params = new URLSearchParams({
+          q: state.q,
+          app: state.app,
+          log: state.logSource,
+          file: state.file,
+          level: state.level,
+          limit: 500,
+        });
+        const res = await fetch(`/api/logs/search?${params}`);
+
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 302) {
+            window.location.href = "/logout";
+            return;
+          }
+          state.logs = [];
+        } else {
+          state.logs = await res.json();
+        }
       }
 
       if (!state.logs || !Array.isArray(state.logs)) {
@@ -770,8 +968,8 @@
         <div
           class="h-full flex flex-col items-center justify-center opacity-30 select-none"
         >
-          <span class="text-4xl mb-4 font-thin text-gray-600">_</span>
-          <p class="text-xs text-gray-500">SELECT_SOURCE_TO_INIT</p>
+          <span class="text-4xl mb-4 font-thin text-gray-500">_</span>
+          <p class="text-xs text-gray-400">SELECT_SOURCE_TO_INIT</p>
         </div>
       </div>
     </div>

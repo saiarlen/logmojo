@@ -4,7 +4,7 @@ import (
 	"local-monitor/internal/auth"
 	"local-monitor/internal/config"
 	"local-monitor/internal/db"
-	"local-monitor/internal/logs" // Ensure this is imported
+	"local-monitor/internal/logs"
 	"local-monitor/internal/metrics"
 	"local-monitor/internal/processes"
 	"local-monitor/internal/services"
@@ -188,18 +188,18 @@ func Setup(app *fiber.App) {
 		return c.JSON(p)
 	})
 
-	api.Post("/service/restart", func(c *fiber.Ctx) error {
-		type Req struct {
-			ServiceName string `json:"service_name"`
+	api.Post("/processes/kill", func(c *fiber.Ctx) error {
+		type KillReq struct {
+			PID int32 `json:"pid"`
 		}
-		var r Req
-		if err := c.BodyParser(&r); err != nil {
-			return c.Status(400).SendString(err.Error())
+		var req KillReq
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
 		}
-		if err := services.RestartService(r.ServiceName); err != nil {
-			return c.Status(500).SendString(err.Error())
+		if err := processes.KillProcess(req.PID); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.JSON(fiber.Map{"status": "ok"})
+		return c.JSON(fiber.Map{"status": "Process killed successfully"})
 	})
 
 	api.Get("/alerts/history", func(c *fiber.Ctx) error {
@@ -232,6 +232,58 @@ func Setup(app *fiber.App) {
 		return c.JSON(fiber.Map{"status": "ok"})
 	})
 
+	// Services API
+	api.Get("/services", func(c *fiber.Ctx) error {
+		serviceList, err := services.GetAllServices()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(serviceList)
+	})
+
+	api.Post("/services/:action", func(c *fiber.Ctx) error {
+		action := c.Params("action")
+		type ServiceReq struct {
+			ServiceName string `json:"service_name"`
+		}
+		var req ServiceReq
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+		}
+
+		var err error
+		switch action {
+		case "start":
+			err = services.StartService(req.ServiceName)
+		case "stop":
+			err = services.StopService(req.ServiceName)
+		case "restart":
+			err = services.RestartService(req.ServiceName)
+		case "enable":
+			err = services.EnableService(req.ServiceName)
+		case "disable":
+			err = services.DisableService(req.ServiceName)
+		default:
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid action"})
+		}
+
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(fiber.Map{"status": "success", "action": action})
+	})
+
+	api.Get("/services/:service/logs", func(c *fiber.Ctx) error {
+		serviceName := c.Params("service")
+		lines := c.QueryInt("lines", 50)
+		
+		logs, err := services.GetServiceLogs(serviceName, lines)
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(fiber.Map{"logs": logs})
+	})
+
 	// WebSocket
 	app.Use("/api/ws", func(c *fiber.Ctx) error {
 		if websocket.IsWebSocketUpgrade(c) {
@@ -246,4 +298,5 @@ func Setup(app *fiber.App) {
 	})
 	app.Get("/api/ws/logs", websocket.New(ws.Handler))
 	app.Get("/api/ws/metrics", websocket.New(ws.MetricsHandler))
+	app.Get("/api/ws/processes", websocket.New(ws.ProcessesHandler))
 }

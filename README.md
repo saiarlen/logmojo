@@ -18,7 +18,7 @@ A high-performance, centralized log management and server monitoring agent. Desi
 - **Real-Time Metrics**: CPU, RAM, Disk, and Network metrics using WebSocket
 - **Historical Data**: SQLite storage for metric history and graphing
 - **Process Manager**: View and manage running processes
-- **Service Management**: Basic service control and monitoring
+- **Advanced Service Management**: Comprehensive systemd service control and monitoring
 - **Alert System**: Configurable thresholds for CPU, disk, and memory alerts
 
 ### 🔐 Security & Authentication
@@ -35,6 +35,17 @@ A high-performance, centralized log management and server monitoring agent. Desi
 - **Screenshot Capture**: Built-in screenshot functionality
 - **Row Highlighting**: Visual feedback for selected log entries
 - **Responsive Design**: Works on desktop and mobile devices
+
+### ⚙️ Advanced Service Management
+- **Dual View Modes**: Professional table view and compact card view
+- **Real-Time Status**: Live service status monitoring with auto-refresh
+- **Complete Service Control**: Start, stop, restart, enable, and disable services
+- **Resource Monitoring**: CPU, memory, PID, and uptime tracking per service
+- **Integrated Log Access**: Direct navigation to service logs with one click
+- **Configuration Management**: Quick access to service configuration files
+- **Status Indicators**: Color-coded status display (running, inactive, failed)
+- **Bulk Operations**: Manage multiple services efficiently
+- **Service Discovery**: Automatic detection of common system services
 
 ### ⚡ Performance Features
 - **No Database Ingestion**: Logs are not stored in database for maximum performance
@@ -153,14 +164,44 @@ apps:
 2. **config.yaml** file
 3. **Default values** (lowest priority)
 
+### Service Configuration
+
+Services are organized within apps for better management:
+
+```yaml
+apps:
+  - name: "System Services"
+    logs: [...]
+    services:
+      - name: "Nginx"
+        service_name: "nginx"
+        enabled: true
+        description: "HTTP and reverse proxy server"
+        config_path: "/etc/nginx/nginx.conf"
+        log_path: "/var/log/nginx/error.log"
+```
+
 ### Log Path Configuration
 
 - If `path` is a **Directory**: All `.log`, `.txt`, `.gz`, `.bz2`, `.xz`, `.lz4` files in it are discovered.
 - If `path` is a **File**: The file and its rotated siblings (e.g., `app.log.1`, `app.log.gz`) are discovered.
 - **Archive Support**: Automatically detects and searches compressed logs with appropriate tools.
 - **Date Range Filtering**: Search logs within specific time ranges (24h, 3d, 7d, 10d, 30d).
+- **Service Log Integration**: Direct access to service logs via journalctl integration.
 
 ## 🆕 New Features (Latest Updates)
+
+### 🔧 Advanced Service Management
+- **Professional Service Manager**: Complete systemd service management interface
+- **Dual View Modes**: Switch between detailed table view and compact card view
+- **Real-Time Monitoring**: Live service status with CPU, memory, and uptime tracking
+- **Integrated Log Access**: One-click navigation to service logs with URL parameters
+- **Configuration Management**: Quick copy of service configuration file paths
+- **Auto-Refresh**: Configurable automatic service status updates
+- **Service Discovery**: Automatic detection and management of common services
+- **Status Indicators**: Color-coded visual status (running/inactive/failed)
+- **Bulk Operations**: Efficient management of multiple services
+- **Service-Log Integration**: Seamless connection between services and their logs
 
 ### 📅 Historical Log Search
 - **Date Range Selection**: Search logs from last 24 hours up to 30 days
@@ -235,6 +276,22 @@ GET /api/logs/search?query=error&dateRange=7d&limit=100
 
 # Live log streaming (WebSocket)
 WS /ws/logs/stream?file=/path/to/log.log
+```
+
+### Service Management API
+```bash
+# List all services
+GET /api/services
+
+# Service actions
+POST /api/services/start
+POST /api/services/stop
+POST /api/services/restart
+POST /api/services/enable
+POST /api/services/disable
+
+# Service logs
+GET /api/services/{service}/logs?lines=100
 ```
 
 ### System Metrics API

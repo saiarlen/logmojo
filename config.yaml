@@ -2,14 +2,55 @@ apps:
   - name: "System Services"
     service_name: "system"
     logs:
-      - name: "Nginx"
-        path: "./demo_logs/nginx/"
       - name: "System Log"
         path: "/var/log/system.log"
       - name: "Install Log"
         path: "/var/log/install.log"
       - name: "WiFi Log"
         path: "/var/log/wifi.log"
+    services:
+      - name: "Nginx"
+        service_name: "nginx"
+        enabled: true
+        description: "HTTP and reverse proxy server"
+        config_path: "/etc/nginx/nginx.conf"
+        log_path: "/var/log/nginx/error.log"
+      - name: "Supervisor"
+        service_name: "supervisor"
+        enabled: true
+        description: "Process control system"
+        config_path: "/etc/supervisor/supervisord.conf"
+        log_path: "/var/log/supervisor/supervisord.log"
+      - name: "PostgreSQL"
+        service_name: "postgresql"
+        enabled: true
+        description: "PostgreSQL database server"
+        config_path: "/etc/postgresql/*/main/postgresql.conf"
+        log_path: "/var/log/postgresql/postgresql-*.log"
+      - name: "MySQL"
+        service_name: "mysql"
+        enabled: true
+        description: "MySQL database server"
+        config_path: "/etc/mysql/mysql.conf.d/mysqld.cnf"
+        log_path: "/var/log/mysql/error.log"
+      - name: "PHP-FPM"
+        service_name: "php8.1-fpm"
+        enabled: true
+        description: "PHP FastCGI Process Manager"
+        config_path: "/etc/php/8.1/fpm/php-fpm.conf"
+        log_path: "/var/log/php8.1-fpm.log"
+      - name: "Asterisk"
+        service_name: "asterisk"
+        enabled: true
+        description: "VoIP PBX system"
+        config_path: "/etc/asterisk/asterisk.conf"
+        log_path: "/var/log/asterisk/messages"
+      - name: "Custom Service"
+        service_name: "custom-app"
+        enabled: true
+        description: "Custom systemd service"
+        config_path: "/etc/systemd/system/custom-app.service"
+        log_path: "/var/log/custom-app.log"
 
   - name: "App One"
     service_name: "app-one"
@@ -24,3 +65,4 @@ apps:
     logs:
       - name: "Monitor Agent"
         path: "./demo_logs/app-two/app.log"
+      
