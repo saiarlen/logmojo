@@ -13,13 +13,14 @@ A high-performance, centralized log management and server monitoring agent. Desi
 - **Smart File Discovery**: Intelligent file scanning to find log files and their rotated siblings
 - **Performance Optimized**: 10-second timeouts, 2000-line limits, and smart file selection (max 15 files)
 - **Advanced Timestamp Parsing**: Supports multiple formats including macOS system logs, ISO 8601, syslog, and Unix timestamps
+- **Intelligent Alert System**: Real-time monitoring with duplicate prevention and persistent tracking
 
 ### 🖥️ System Monitoring
 - **Real-Time Metrics**: CPU, RAM, Disk, and Network metrics using WebSocket
 - **Historical Data**: SQLite storage for metric history and graphing
 - **Process Manager**: View and manage running processes
 - **Advanced Service Management**: Comprehensive systemd service control and monitoring
-- **Alert System**: Configurable thresholds for CPU, disk, and memory alerts
+- **Advanced Alert Management**: Multi-type alert rules with smart duplicate prevention and persistent tracking
 
 ### 🔐 Security & Authentication
 - **JWT Token-Based Auth**: Secure, stateless authentication with 24-hour validity
@@ -189,6 +190,23 @@ apps:
 - **Date Range Filtering**: Search logs within specific time ranges (24h, 3d, 7d, 10d, 30d).
 - **Service Log Integration**: Direct access to service logs via journalctl integration.
 
+### 🚨 Advanced Alert Management System
+- **Multi-Type Alert Rules**: System metrics, log patterns, exception detection, and service status monitoring
+- **Smart Duplicate Prevention**: Hash-based tracking prevents repeated alerts for same log entries
+- **Persistent Alert Memory**: Database storage survives application restarts - no duplicate alerts after restart
+- **Time-Based Filtering**: Only alerts on recent errors (last 10 minutes) to avoid historical noise
+- **Automatic Cleanup**: Removes processed entries older than 24 hours to maintain performance
+- **Real-Time Processing**: Instant alerts for new errors without cooldown delays
+- **Multi-Language Exception Detection**: Automatic detection for Java, Python, JavaScript, PHP, Ruby, and Go
+- **Email Notifications**: HTML-formatted alerts with severity color coding and custom FROM addresses
+- **Configurable Severity Levels**: Low, Medium, High, Critical with color-coded indicators
+- **Alert History & Management**: Complete audit trail with resolve/unresolve capabilities
+- **Rule Management UI**: Create, edit, enable/disable, and delete alert rules through web interface
+- **Performance Optimized**: Hash-based keys and database indexes for efficient processing
+- **Real-Time Updates**: WebSocket-based live updates for alert history and rule status
+- **Intelligent Cache Management**: Rules cache automatically refreshes when modified
+- **Modern UI**: Clean, responsive interface with subtle styling and intuitive controls
+
 ## 🆕 New Features (Latest Updates)
 
 ### 🔧 Advanced Service Management
@@ -276,6 +294,33 @@ GET /api/logs/search?query=error&dateRange=7d&limit=100
 
 # Live log streaming (WebSocket)
 WS /ws/logs/stream?file=/path/to/log.log
+```
+
+### Alert Management API
+```bash
+# List all alert rules
+GET /api/alerts/rules
+
+# Create alert rule
+POST /api/alerts/rules
+
+# Update alert rule
+PUT /api/alerts/rules/{id}
+
+# Delete alert rule
+DELETE /api/alerts/rules/{id}
+
+# Toggle rule status
+POST /api/alerts/rules/{id}/toggle
+
+# Get alert history
+GET /api/alerts/history
+
+# Resolve alert
+POST /api/alerts/{id}/resolve
+
+# Test alert
+POST /api/alerts/test
 ```
 
 ### Service Management API

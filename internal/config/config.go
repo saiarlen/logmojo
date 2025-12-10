@@ -75,6 +75,7 @@ type EmailConfig struct {
 	SMTPPort int      `mapstructure:"smtp_port"`
 	Username string   `mapstructure:"username"`
 	Password string   `mapstructure:"password"`
+	From     string   `mapstructure:"from"`
 	To       []string `mapstructure:"to"`
 }
 
@@ -132,7 +133,14 @@ func setDefaults() {
 
 	// Notifier defaults
 	viper.SetDefault("notifiers.email.enabled", false)
+	viper.SetDefault("notifiers.email.smtp_host", "smtp.gmail.com")
+	viper.SetDefault("notifiers.email.smtp_port", 587)
+	viper.SetDefault("notifiers.email.username", "")
+	viper.SetDefault("notifiers.email.password", "")
+	viper.SetDefault("notifiers.email.from", "")
+	viper.SetDefault("notifiers.email.to", []string{})
 	viper.SetDefault("notifiers.webhook.enabled", false)
+	viper.SetDefault("notifiers.webhook.url", "")
 
 	// Development mode
 	viper.SetDefault("dev_mode", false)

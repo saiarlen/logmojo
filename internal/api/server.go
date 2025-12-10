@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+	"local-monitor/internal/alerts"
 	"local-monitor/internal/auth"
 	"local-monitor/internal/config"
 	"local-monitor/internal/db"
@@ -9,6 +11,8 @@ import (
 	"local-monitor/internal/processes"
 	"local-monitor/internal/services"
 	"local-monitor/internal/ws"
+	"log"
+	"strconv"
 	"time"
 
 	"github.com/gofiber/contrib/websocket"
@@ -203,33 +207,159 @@ func Setup(app *fiber.App) {
 	})
 
 	api.Get("/alerts/history", func(c *fiber.Ctx) error {
-		rows, err := db.DB.Query("SELECT id, timestamp, type, message, resolved FROM alerts ORDER BY timestamp DESC LIMIT 50")
+		alerts, err := db.GetAlertHistory()
 		if err != nil {
-			return c.Status(500).SendString(err.Error())
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		defer rows.Close()
-
-		var history []map[string]interface{}
-		for rows.Next() {
-			var id int
-			var ts time.Time
-			var typ, msg string
-			var res bool
-			rows.Scan(&id, &ts, &typ, &msg, &res)
-			history = append(history, map[string]interface{}{
-				"id":        id,
-				"timestamp": ts,
-				"type":      typ,
-				"message":   msg,
-				"resolved":  res,
-			})
-		}
-		return c.JSON(history)
+		return c.JSON(alerts)
 	})
 
 	api.Post("/alerts/test", func(c *fiber.Ctx) error {
 		db.RecordAlert("test", "This is a test alert triggered by user")
 		return c.JSON(fiber.Map{"status": "ok"})
+	})
+
+	// Alert Rules API
+	api.Get("/alerts/rules", func(c *fiber.Ctx) error {
+		rules, err := db.GetAlertRules()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(rules)
+	})
+
+	api.Post("/alerts/rules", func(c *fiber.Ctx) error {
+		var rule db.AlertRule
+		if err := c.BodyParser(&rule); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+		}
+		
+		rule.ID = fmt.Sprintf("rule_%d", time.Now().UnixNano())
+		rule.CreatedAt = time.Now()
+		rule.UpdatedAt = time.Now()
+		
+		if err := db.CreateAlertRule(rule); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		// Reload alert rules cache
+		alerts.ReloadAlertRules()
+		
+		// Broadcast rule creation to WebSocket clients
+		ws.BroadcastRuleUpdate(rule)
+		
+		return c.JSON(rule)
+	})
+
+	api.Put("/alerts/rules/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		var rule db.AlertRule
+		if err := c.BodyParser(&rule); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+		}
+		
+		// Get existing rule to preserve CreatedAt
+		existingRules, err := db.GetAlertRules()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		var existingRule *db.AlertRule
+		for _, r := range existingRules {
+			if r.ID == id {
+				existingRule = &r
+				break
+			}
+		}
+		
+		if existingRule == nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Rule not found"})
+		}
+		
+		rule.ID = id
+		rule.CreatedAt = existingRule.CreatedAt
+		rule.UpdatedAt = time.Now()
+		
+		if err := db.UpdateAlertRule(rule); err != nil {
+			log.Printf("[API] Failed to update alert rule %s: %v", id, err)
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		// Reload alert rules cache
+		alerts.ReloadAlertRules()
+		
+		// Broadcast rule update to WebSocket clients
+		ws.BroadcastRuleUpdate(rule)
+		
+		return c.JSON(rule)
+	})
+
+	api.Delete("/alerts/rules/:id", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		if err := db.DeleteAlertRule(id); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		// Reload alert rules cache
+		alerts.ReloadAlertRules()
+		
+		return c.JSON(fiber.Map{"status": "deleted"})
+	})
+
+	api.Post("/alerts/rules/:id/toggle", func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		var req struct {
+			Enabled bool `json:"enabled"`
+		}
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
+		}
+		
+		// Get current rule
+		rules, err := db.GetAlertRules()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		var rule *db.AlertRule
+		for _, r := range rules {
+			if r.ID == id {
+				rule = &r
+				break
+			}
+		}
+		
+		if rule == nil {
+			return c.Status(404).JSON(fiber.Map{"error": "Rule not found"})
+		}
+		
+		rule.Enabled = req.Enabled
+		rule.UpdatedAt = time.Now()
+		
+		if err := db.UpdateAlertRule(*rule); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		// Reload alert rules cache
+		alerts.ReloadAlertRules()
+		
+		return c.JSON(fiber.Map{"status": "updated"})
+	})
+
+	api.Post("/alerts/:id/resolve", func(c *fiber.Ctx) error {
+		id, err := strconv.Atoi(c.Params("id"))
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid alert ID"})
+		}
+		
+		if err := db.ResolveAlert(id); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		// Broadcast alert resolution to WebSocket clients
+		ws.BroadcastAlertResolved(id)
+		
+		return c.JSON(fiber.Map{"status": "resolved"})
 	})
 
 	// Services API
@@ -299,4 +429,5 @@ func Setup(app *fiber.App) {
 	app.Get("/api/ws/logs", websocket.New(ws.Handler))
 	app.Get("/api/ws/metrics", websocket.New(ws.MetricsHandler))
 	app.Get("/api/ws/processes", websocket.New(ws.ProcessesHandler))
+	app.Get("/api/ws/alerts", websocket.New(ws.AlertsHandler))
 }

@@ -45,11 +45,35 @@ func migrate() error {
 			message TEXT,
 			resolved BOOLEAN DEFAULT 0
 		);`,
+		`CREATE TABLE IF NOT EXISTS alert_rules (
+			id TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			description TEXT,
+			type TEXT NOT NULL,
+			condition TEXT,
+			threshold REAL DEFAULT 0,
+			severity TEXT DEFAULT 'medium',
+			enabled BOOLEAN DEFAULT 1,
+			email_enabled BOOLEAN DEFAULT 0,
+			log_pattern TEXT,
+			app_filter TEXT,
+			log_filter TEXT,
+			created_at DATETIME,
+			updated_at DATETIME,
+			last_triggered DATETIME
+		);`,
 		`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE,
 			password_hash TEXT
 		);`,
+		`CREATE TABLE IF NOT EXISTS processed_log_entries (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			entry_hash TEXT UNIQUE,
+			processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);`,
+		`CREATE INDEX IF NOT EXISTS idx_processed_entries_hash ON processed_log_entries(entry_hash);`,
+		`CREATE INDEX IF NOT EXISTS idx_processed_entries_time ON processed_log_entries(processed_at);`,
 	}
 
 	for _, q := range queries {
@@ -57,6 +81,18 @@ func migrate() error {
 			return err
 		}
 	}
+	
+	// Add new columns to existing alerts table
+	migrationQueries := []string{
+		`ALTER TABLE alerts ADD COLUMN rule_id TEXT;`,
+		`ALTER TABLE alerts ADD COLUMN severity TEXT DEFAULT 'medium';`,
+		`ALTER TABLE alerts ADD COLUMN resolved_at DATETIME;`,
+	}
+	
+	for _, q := range migrationQueries {
+		DB.Exec(q) // Ignore errors for existing columns
+	}
+	
 	return nil
 }
 

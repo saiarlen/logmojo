@@ -1,0 +1,58 @@
+2025-12-10 13:34:51 ERROR: Database connection timeout after 30 seconds
+2025-12-10 13:34:51 FATAL: Unable to allocate memory for buffer
+2025-12-10 13:34:51 CRITICAL: Disk space critically low
+2025-12-10 13:34:51 WARNING: High CPU usage detected
+2025-12-10 13:34:51 Traceback (most recent call last):
+2025-12-10 13:34:51   File "app.py", line 42, in process_data
+2025-12-10 13:34:51     result = data['missing_key']
+2025-12-10 13:34:51 KeyError: 'missing_key'
+2025-12-10 13:34:51 Uncaught TypeError: Cannot read property 'length' of undefined
+2025-12-10 13:34:51     at processArray (main.js:34:12)
+2025-12-10 13:34:51     at Object.handleRequest (app.js:89:5)
+2025-12-10 13:35:41 SECURITY: Failed login attempt from IP 192.168.1.100
+2025-12-10 13:35:41 SECURITY: Suspicious file access detected
+2025-12-10 13:35:41 SYSTEM: Disk I/O error on /dev/sda1
+Wed Dec 10 13:53:11 IST 2025 ERROR: Manual test error
+Wed Dec 10 13:53:11 IST 2025 FATAL: Manual test fatal
+Wed Dec 10 14:08:02 IST 2025 ERROR: Manual test error
+Wed Dec 10 14:08:02 IST 2025 FATAL: Manual test fatal
+Wed Dec 10 14:18:27 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 14:18:27 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 14:46:14 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 14:46:14 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 14:55:05 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 14:55:05 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 14:56:19 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 14:56:19 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 14:57:25 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 14:57:25 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 15:37:42 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 15:37:42 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 15:47:45 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 15:47:45 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 15:52:01 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 15:52:01 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 15:54:17 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 15:54:17 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 15:57:59 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 15:57:59 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 16:20:10 IST 2025 Traceback (most recent call last):
+  File "app.py", line 42, in main
+    result = divide_by_zero()
+ZeroDivisionError: division by zero
+Wed Dec 10 16:22:06 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 16:22:06 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 16:27:37 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 16:27:37 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 16:29:15 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 16:29:15 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 16:32:52 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 16:32:52 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 16:34:28 IST 2025 Traceback (most recent call last):
+  File "app.py", line 42, in main
+    result = divide_by_zero()
+ZeroDivisionError: division by zero
+Wed Dec 10 16:35:58 IST 2025 ERROR: Authentication failed for user admin
+Wed Dec 10 16:35:58 IST 2025 CRITICAL: System overload detected
+Wed Dec 10 16:37:51 IST 2025 Exception in thread "main" java.lang.NullPointerException
+    at com.example.App.main(App.java:15)

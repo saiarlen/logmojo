@@ -3,3 +3,14 @@
 2024-01-15 14:32:00 [ERROR] Failed to process payment transaction
 2024-01-15 14:35:00 [ERROR] API rate limit exceeded
 2024-01-15 14:40:00 [FATAL] Critical system failure detected
+2025-12-10 13:34:51 FATAL: Service startup failed
+2025-12-10 13:34:51 ERROR: Network connection refused
+2025-12-10 13:34:51 PHP Fatal error: Uncaught Error: Call to undefined function mysql_connect()
+2025-12-10 13:34:51 Stack trace:
+2025-12-10 13:34:51 #0 /var/www/html/database.php(15): connect_db()
+2025-12-10 13:34:51 Traceback (most recent call last):
+2025-12-10 13:34:51     2: from /app/main.rb:15:in '<main>'
+2025-12-10 13:34:51     1: from /app/user.rb:8:in 'find_user'
+2025-12-10 13:34:51 /app/user.rb:8:in 'find': undefined method 'name' for nil:NilClass (NoMethodError)
+2025-12-10 13:35:41 PERFORMANCE: Query execution time exceeded 5000ms
+2025-12-10 13:35:41 NETWORK: Connection pool exhausted

@@ -6,8 +6,6 @@ apps:
         path: "/var/log/system.log"
       - name: "Install Log"
         path: "/var/log/install.log"
-      - name: "WiFi Log"
-        path: "/var/log/wifi.log"
     services:
       - name: "Nginx"
         service_name: "nginx"
@@ -27,30 +25,14 @@ apps:
         description: "PostgreSQL database server"
         config_path: "/etc/postgresql/*/main/postgresql.conf"
         log_path: "/var/log/postgresql/postgresql-*.log"
-      - name: "MySQL"
-        service_name: "mysql"
-        enabled: true
-        description: "MySQL database server"
-        config_path: "/etc/mysql/mysql.conf.d/mysqld.cnf"
-        log_path: "/var/log/mysql/error.log"
-      - name: "PHP-FPM"
-        service_name: "php8.1-fpm"
-        enabled: true
-        description: "PHP FastCGI Process Manager"
-        config_path: "/etc/php/8.1/fpm/php-fpm.conf"
-        log_path: "/var/log/php8.1-fpm.log"
-      - name: "Asterisk"
-        service_name: "asterisk"
-        enabled: true
-        description: "VoIP PBX system"
-        config_path: "/etc/asterisk/asterisk.conf"
-        log_path: "/var/log/asterisk/messages"
-      - name: "Custom Service"
-        service_name: "custom-app"
-        enabled: true
-        description: "Custom systemd service"
-        config_path: "/etc/systemd/system/custom-app.service"
-        log_path: "/var/log/custom-app.log"
+
+  - name: "Test App"
+    service_name: "test-app"
+    logs:
+      - name: "Application Log"
+        path: "./demo_logs/test-app/app.log"
+      - name: "Error Log"
+        path: "./demo_logs/test-app/error.log"
 
   - name: "App One"
     service_name: "app-one"
@@ -65,4 +47,5 @@ apps:
     logs:
       - name: "Monitor Agent"
         path: "./demo_logs/app-two/app.log"
-      
+      - name: "Error Log"
+        path: "./demo_logs/app-two/error.log"
