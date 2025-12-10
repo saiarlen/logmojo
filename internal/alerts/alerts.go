@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	alertRules = make(map[string]*db.AlertRule)
-	lastLogCheck = time.Now()
+	alertRules     = make(map[string]*db.AlertRule)
+	lastLogCheck   = time.Now()
 	lastRuleReload = time.Now()
 	// Removed in-memory tracking - now using persistent database storage
 )
@@ -27,7 +27,7 @@ var (
 func StartAlertEngine() {
 	// Load alert rules from database
 	loadAlertRules()
-	
+
 	// Initial cleanup of old processed entries
 	go func() {
 		deleted, err := db.CleanupOldProcessedEntries(24)
@@ -36,12 +36,12 @@ func StartAlertEngine() {
 		} else {
 			log.Printf("[ALERTS] Initial cleanup: removed %d old processed entries", deleted)
 		}
-		
+
 		if count, err := db.GetProcessedEntriesCount(); err == nil {
 			log.Printf("[ALERTS] Starting with %d processed entries in database", count)
 		}
 	}()
-	
+
 	// Start monitoring goroutines
 	go systemMetricsMonitor()
 	go logPatternMonitor()
@@ -54,7 +54,7 @@ func loadAlertRules() {
 		log.Printf("[ALERTS] Failed to load alert rules: %v", err)
 		return
 	}
-	
+
 	alertRules = make(map[string]*db.AlertRule)
 	for _, rule := range rules {
 		alertRules[rule.ID] = &rule
@@ -70,7 +70,7 @@ func ReloadAlertRules() {
 func systemMetricsMonitor() {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		checkSystemMetrics()
 	}
@@ -79,7 +79,7 @@ func systemMetricsMonitor() {
 func logPatternMonitor() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		checkLogPatterns()
 	}
@@ -88,7 +88,7 @@ func logPatternMonitor() {
 func exceptionDetectionMonitor() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
-	
+
 	for range ticker.C {
 		checkExceptions()
 	}
@@ -151,7 +151,7 @@ func checkLogPatterns() {
 		}
 
 		// Filter results to only NEW entries from recent time window (not previously processed)
-		recentWindow := 10 * time.Minute // TODO: Make this configurable
+		recentWindow := 10 * time.Minute
 		recentThreshold := time.Now().Add(-recentWindow)
 		var newMatches []logs.LogResult
 		for _, result := range results {
@@ -159,10 +159,10 @@ func checkLogPatterns() {
 			if result.Timestamp.Before(recentThreshold) {
 				continue
 			}
-			
+
 			// Create hash-based key for this log entry (shorter and more efficient)
 			entryHash := db.HashLogEntry(result.File, result.Message, result.Timestamp.Unix())
-			
+
 			// Only include if we haven't processed this entry before
 			if !db.IsEntryProcessed(entryHash) {
 				newMatches = append(newMatches, result)
@@ -185,7 +185,7 @@ func checkLogPatterns() {
 		}
 	}
 	lastLogCheck = time.Now()
-	
+
 	// Cleanup old processed entries (time-based cleanup every 10 minutes)
 	if time.Now().Minute()%10 == 0 {
 		go func() {
@@ -235,10 +235,10 @@ func checkExceptions() {
 			if result.Timestamp.Before(recentThreshold) {
 				continue
 			}
-			
+
 			// Create hash-based key for this log entry
 			entryHash := db.HashLogEntry(result.File, result.Message, result.Timestamp.Unix())
-			
+
 			// Only include if we haven't processed this entry before
 			if !db.IsEntryProcessed(entryHash) {
 				newExceptions = append(newExceptions, result)
@@ -269,7 +269,7 @@ func triggerAlert(rule *db.AlertRule, message string) {
 		Timestamp: time.Now(),
 		Resolved:  false,
 	}
-	
+
 	if err := db.RecordAlertWithRule(alert); err != nil {
 		log.Printf("[ALERTS] Failed to record alert: %v", err)
 		return
@@ -279,7 +279,7 @@ func triggerAlert(rule *db.AlertRule, message string) {
 	now := time.Now()
 	rule.LastTriggered = &now
 	db.UpdateAlertRuleLastTriggered(rule.ID, now)
-	
+
 	// Update the in-memory rule as well
 	alertRules[rule.ID] = rule
 
@@ -289,10 +289,10 @@ func triggerAlert(rule *db.AlertRule, message string) {
 	}
 
 	log.Printf("[ALERTS] Triggered: %s - %s", rule.Name, message)
-	
+
 	// Broadcast alert to WebSocket clients
 	ws.BroadcastNewAlert(alert)
-	
+
 	// Broadcast rule update to refresh "Last triggered" time on frontend
 	ws.BroadcastRuleUpdate(*rule)
 }
@@ -321,7 +321,7 @@ func sendEmail(cfg config.EmailConfig, subject, body, severity string) {
 	}
 
 	auth := smtp.PlainAuth("", cfg.Username, cfg.Password, cfg.SMTPHost)
-	
+
 	// Create HTML email with severity styling
 	severityColor := getSeverityColor(severity)
 	htmlBody := fmt.Sprintf(`
@@ -366,7 +366,7 @@ func sendWebhook(cfg config.WebhookConfig, subject, body, severity string) {
 		"timestamp": time.Now().Unix(),
 		"source":    "logger-emp",
 	}
-	
+
 	data, _ := json.Marshal(payload)
 	resp, err := http.Post(cfg.URL, "application/json", bytes.NewBuffer(data))
 	if err != nil {

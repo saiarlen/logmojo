@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local Monitor</title>
+    <title>{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}</title>
+    <link rel="icon" type="image/x-icon" href="/public/images/favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
@@ -11,49 +12,121 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
-        .sidebar-link { @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 hover:bg-base-300; }
+        .sidebar-link { @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 hover:bg-base-300 hover:scale-105 hover:shadow-lg; }
         .sidebar-link.active { @apply bg-primary text-primary-content font-medium shadow-md; }
+        @media (min-width: 1024px) {
+            .sidebar-collapsed { width: 80px !important; }
+            .sidebar-collapsed .menu-text { display: none; }
+            .sidebar-collapsed .brand-text { display: none; }
+            .sidebar-collapsed .divider { margin: 8px 0; }
+        }
     </style>
 </head>
 <body class="bg-base-300 min-h-screen text-base-content antialiased">
 
     <div class="drawer lg:drawer-open">
         <input id="my-drawer-2" type="checkbox" class="drawer-toggle" />
-        <div class="drawer-content flex flex-col p-8 gap-6">
+        <div class="drawer-content flex flex-col min-h-screen">
             <!-- Page content here -->
-            <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden mb-4 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                Menu
-            </label>
-            
-            {{ yield body() }}
+            <div class="flex-1 p-8 gap-6 flex flex-col">
+                <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden mb-4 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    Menu
+                </label>
+                
+                {{ yield body() }}
+            </div>
 
+            <!-- Footer - Sticks to bottom -->
+            <footer class="border-t border-base-content/10 py-4 mt-auto bg-base-200/50 backdrop-blur-sm">
+                <div class="text-center text-xs opacity-60">
+                    <span class="font-semibold">{{ if app_name }}{{ app_name }}{{ else }}Logger EMP{{ end }}</span> <span class="opacity-40" id="footer-version">v1.0.0</span> • <span id="copyright-text">{{ if copyright_text }}{{ copyright_text }}{{ else }}© 2024 Logger EMP{{ end }}</span>
+                </div>
+            </footer>
         </div> 
         <div class="drawer-side z-20">
             <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label> 
-            <aside class="w-72 min-h-full bg-base-100/90 backdrop-blur-md text-base-content flex flex-col shadow-2xl border-r border-base-content/5">
-                <div class="p-6 pb-2">
-                    <div class="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2">Local Monitor</div>
-                    <div class="text-xs font-medium opacity-50 px-2 mt-1">System Dashboard</div>
+            <aside id="sidebar" class="w-72 min-h-full bg-base-100/90 backdrop-blur-md text-base-content flex flex-col shadow-2xl border-r border-base-content/5 transition-all duration-300">
+                <div class="p-6 pb-2 flex items-center justify-between">
+                    <div>
+                        {{ if logo_type == "image" }}
+                            <img src="/public/images/logo.png" alt="{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}" class="h-8 px-2" id="app-logo" onerror="this.style.display='none'; document.getElementById('app-title').style.display='block'" />
+                            <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2 hidden" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}</div>
+                        {{ else }}
+                            <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}</div>
+                        {{ end }}
+                        <div class="brand-text text-xs font-medium opacity-50 px-2 mt-1">System Dashboard</div>
+                    </div>
+                    <button onclick="toggleSidebar()" class="btn btn-ghost btn-sm p-2 hover:bg-base-300 hidden lg:flex">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
                 </div>
                 <div class="divider my-2"></div>
                 <ul class="menu p-4 gap-2 flex-1 text-base">
-                    <li><a href="/" class="sidebar-link {{ if isset(current_page) && current_page == "dashboard" }}active{{ end }}">Dashboard</a></li>
-                    <li><a href="/logs" class="sidebar-link {{ if isset(current_page) && current_page == "logs" }}active{{ end }}">Logs</a></li>
-                    <li><a href="/processes" class="sidebar-link {{ if isset(current_page) && current_page == "processes" }}active{{ end }}">Processes</a></li>
-                    <li><a href="/services" class="sidebar-link {{ if isset(current_page) && current_page == "services" }}active{{ end }}">Services</a></li>
-                    <li><a href="/alerts" class="sidebar-link {{ if isset(current_page) && current_page == "alerts" }}active{{ end }}">Alerts</a></li>
+                    <li><a href="/" class="sidebar-link {{ if isset(current_page) && current_page == "dashboard" }}active{{ end }}" title="Dashboard">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        <span class="menu-text">Dashboard</span>
+                    </a></li>
+                    <li><a href="/logs" class="sidebar-link {{ if isset(current_page) && current_page == "logs" }}active{{ end }}" title="Logs">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span class="menu-text">Logs</span>
+                    </a></li>
+                    <li><a href="/processes" class="sidebar-link {{ if isset(current_page) && current_page == "processes" }}active{{ end }}" title="Processes">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                        </svg>
+                        <span class="menu-text">Processes</span>
+                    </a></li>
+                    <li><a href="/services" class="sidebar-link {{ if isset(current_page) && current_page == "services" }}active{{ end }}" title="Services">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span class="menu-text">Services</span>
+                    </a></li>
+                    <li><a href="/alerts" class="sidebar-link {{ if isset(current_page) && current_page == "alerts" }}active{{ end }}" title="Alerts">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                        </svg>
+                        <span class="menu-text">Alerts</span>
+                    </a></li>
                 </ul>
-                <div class="p-4 border-t border-base-300/50">
-                    <a href="/logout" class="btn btn-error btn-outline w-full gap-2 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                        Logout
-                    </a>
+                <!-- Settings & Logout Section - Glassmorphism Style -->
+                <div class="p-4 border-t border-base-content/10 mt-auto">
+                    <div class="flex gap-2">
+                        <!-- Settings Button - Glassmorphism -->
+                        <a href="/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg flex-1 transition-all duration-300 hover:bg-base-300 hover:scale-105 border border-base-content/10 {{ if isset(current_page) && current_page == "settings" }}bg-base-300{{ end }}" title="Settings">
+                            <svg class="w-5 h-5 text-base-content/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="menu-text font-medium text-base-content/80">Settings</span>
+                        </a>
+                        
+                        <!-- Logout Button -->
+                        <a href="/logout" class="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 hover:bg-error/10 hover:scale-105 text-error/70 hover:text-error" title="Logout">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                            </svg>
+                        </a>
+                    </div>
                 </div>
             </aside>
         </div>
     </div>
 
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('sidebar-collapsed');
+        }
+    </script>
     <script src="/public/js/main.js"></script>
     {{ yield script() }}
 </body>

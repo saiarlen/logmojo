@@ -74,6 +74,13 @@ func migrate() error {
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_processed_entries_hash ON processed_log_entries(entry_hash);`,
 		`CREATE INDEX IF NOT EXISTS idx_processed_entries_time ON processed_log_entries(processed_at);`,
+		`CREATE TABLE IF NOT EXISTS app_settings (
+			id INTEGER PRIMARY KEY,
+			app_name TEXT,
+			copyright_text TEXT,
+			logo_type TEXT DEFAULT 'text',
+			updated_at DATETIME
+		);`,
 	}
 
 	for _, q := range queries {
@@ -136,8 +143,32 @@ func CreateUser(username, hash string) error {
 	return err
 }
 
+func UpdateUser(username, hash string) error {
+	_, err := DB.Exec("UPDATE users SET password_hash = ? WHERE username = ?", hash, username)
+	return err
+}
+
 func UserExists() bool {
 	var count int
 	_ = DB.QueryRow("SELECT count(*) FROM users").Scan(&count)
 	return count > 0
+}
+
+func SaveAppSettings(appName, copyrightText, logoType string) error {
+	_, err := DB.Exec(`INSERT OR REPLACE INTO app_settings (id, app_name, copyright_text, logo_type, updated_at) 
+						 VALUES (1, ?, ?, ?, ?)`, appName, copyrightText, logoType, time.Now())
+	return err
+}
+
+func GetAppSettings() (map[string]interface{}, error) {
+	var appName, copyrightText, logoType string
+	err := DB.QueryRow(`SELECT app_name, copyright_text, logo_type FROM app_settings WHERE id = 1`).Scan(&appName, &copyrightText, &logoType)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"app_name": appName,
+		"copyright_text": copyrightText,
+		"logo_type": logoType,
+	}, nil
 }

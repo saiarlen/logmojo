@@ -117,10 +117,9 @@
       await fetch("/api/processes/kill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pid: pid }),
+        body: JSON.stringify({ pid: pid, name: name }),
       });
       showNotification("Process killed successfully", "success");
-      loadProcesses(); // Refresh the list
     } catch (error) {
       showNotification("Failed to kill process: " + error.message, "error");
     }

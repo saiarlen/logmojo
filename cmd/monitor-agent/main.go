@@ -11,6 +11,7 @@ import (
 	"local-monitor/internal/api"
 	"local-monitor/internal/config"
 	"local-monitor/internal/db"
+	"local-monitor/internal/logger"
 	"local-monitor/internal/metrics"
 
 	"github.com/gofiber/fiber/v2"
@@ -31,6 +32,12 @@ func main() {
 	if err := db.Init(dbPath); err != nil {
 		log.Fatalf("Failed to init DB: %v", err)
 	}
+
+	// 2.5. Init Logger
+	if err := logger.Init(); err != nil {
+		log.Fatalf("Failed to init Logger: %v", err)
+	}
+	logger.LogEvent("SYSTEM_START", "system", "Application started")
 
 	// 3. Start Background Tasks
 	metrics.StartHistoryRecorder()

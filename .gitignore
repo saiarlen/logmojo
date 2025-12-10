@@ -6,3 +6,7 @@ monitor.db
 .vscode
 monitor-agent
 user-cli
+public/images/*
+!public/images/.gitkeep
+logs/*
+!logs/.gitkeep

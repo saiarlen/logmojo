@@ -1,0 +1,274 @@
+{{ extends "layouts/main" }}
+
+{{ block script() }}
+<script>
+async function updatePassword() {
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (newPassword !== confirmPassword) {
+        alert('New passwords do not match');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/settings/password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
+        });
+        
+        if (response.ok) {
+            alert('Password updated successfully');
+            document.getElementById('password-form').reset();
+        } else {
+            alert('Failed to update password');
+        }
+    } catch (e) {
+        alert('Error updating password');
+    }
+}
+
+async function updateAppSettings() {
+    const appName = document.getElementById('app-name').value;
+    const copyrightText = document.getElementById('copyright-text-input').value;
+    const logoType = document.querySelector('input[name="logo-type"]:checked').value;
+    
+    const formData = new FormData();
+    formData.append('app_name', appName);
+    formData.append('copyright_text', copyrightText);
+    formData.append('logo_type', logoType);
+    
+    const logoFile = document.getElementById('logo-upload').files[0];
+    const faviconFile = document.getElementById('favicon-upload').files[0];
+    
+    if (logoFile) formData.append('logo', logoFile);
+    if (faviconFile) formData.append('favicon', faviconFile);
+    
+    try {
+        const response = await fetch('/api/settings/app', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            alert('Settings updated successfully');
+            // Update UI elements immediately
+            document.getElementById('copyright-text').textContent = copyrightText;
+            document.querySelector('.brand-text').textContent = appName;
+            
+            // Update favicon if uploaded
+            if (faviconFile) {
+                const link = document.querySelector('link[rel="icon"]') || document.createElement('link');
+                link.rel = 'icon';
+                link.href = '/public/images/favicon.' + faviconFile.name.split('.').pop();
+                document.head.appendChild(link);
+            }
+        } else {
+            alert('Failed to update settings');
+        }
+    } catch (e) {
+        alert('Error updating settings');
+    }
+}
+
+async function loadSystemInfo() {
+    try {
+        const response = await fetch('/api/system/info');
+        const info = await response.json();
+        
+        document.getElementById('os-info').innerHTML = `
+            <div class="bg-base-200/50 p-3 rounded-lg">
+                <div class="text-xs text-base-content/60 mb-1">Operating System</div>
+                <div class="font-medium">${info.os}</div>
+            </div>
+            <div class="bg-base-200/50 p-3 rounded-lg">
+                <div class="text-xs text-base-content/60 mb-1">Platform</div>
+                <div class="font-medium">${info.platform}</div>
+            </div>
+            <div class="bg-base-200/50 p-3 rounded-lg">
+                <div class="text-xs text-base-content/60 mb-1">Architecture</div>
+                <div class="font-medium">${info.arch}</div>
+            </div>
+            <div class="bg-base-200/50 p-3 rounded-lg">
+                <div class="text-xs text-base-content/60 mb-1">Hostname</div>
+                <div class="font-medium">${info.hostname}</div>
+            </div>
+            <div class="bg-base-200/50 p-3 rounded-lg col-span-2">
+                <div class="text-xs text-base-content/60 mb-1">System Uptime</div>
+                <div class="font-medium">${Math.floor(info.uptime / 3600)}h ${Math.floor((info.uptime % 3600) / 60)}m</div>
+            </div>
+        `;
+        
+        // Load version info
+        if (info.version) {
+            document.getElementById('app-version').textContent = info.version;
+            document.getElementById('footer-version').textContent = 'v' + info.version;
+        }
+        if (info.build) document.getElementById('app-build').textContent = info.build;
+    } catch (e) {
+        document.getElementById('os-info').innerHTML = '<div class="text-error col-span-2">Failed to load system info</div>';
+    }
+}
+
+async function loadAppSettings() {
+    try {
+        const response = await fetch('/api/settings/app');
+        const settings = await response.json();
+        
+        document.getElementById('app-name').value = settings.app_name || 'Local Monitor';
+        document.getElementById('copyright-text-input').value = settings.copyright_text || '© 2024 Logger EMP';
+        
+        const logoTypeRadio = document.querySelector(`input[name="logo-type"][value="${settings.logo_type || 'text'}"]`);
+        if (logoTypeRadio) logoTypeRadio.checked = true;
+    } catch (e) {
+        console.log('Using default settings');
+    }
+}
+
+loadSystemInfo();
+loadAppSettings();
+</script>
+{{ end }}
+
+{{ block body() }}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center gap-4 mb-8">
+        <div class="p-3 bg-primary/10 rounded-xl">
+            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </div>
+        <div>
+            <h1 class="text-3xl font-bold">Settings</h1>
+            <p class="text-base-content/60 mt-1">Manage your application preferences and account</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+        <!-- Branding -->
+        <div class="bg-base-100 rounded-2xl p-6 shadow-lg border border-base-content/5">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 bg-blue-500/10 rounded-lg">
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold">Branding</h2>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Application Name</label>
+                    <input id="app-name" type="text" value="Local Monitor" class="input input-bordered w-full" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Logo Type</label>
+                    <div class="form-control">
+                        <label class="label cursor-pointer justify-start gap-3">
+                            <input type="radio" name="logo-type" value="text" class="radio radio-sm" checked />
+                            <span class="label-text">Use App Name as Logo</span>
+                        </label>
+                        <label class="label cursor-pointer justify-start gap-3">
+                            <input type="radio" name="logo-type" value="image" class="radio radio-sm" />
+                            <span class="label-text">Use Image Logo</span>
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Logo Upload</label>
+                    <input id="logo-upload" type="file" accept="image/*" class="file-input file-input-bordered w-full" />
+                    <div class="text-xs text-base-content/60 mt-1">Recommended: 200x50px PNG or SVG</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Favicon Upload</label>
+                    <input id="favicon-upload" type="file" accept="image/*" class="file-input file-input-bordered w-full" />
+                    <div class="text-xs text-base-content/60 mt-1">Recommended: 32x32px ICO or PNG</div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Copyright Text</label>
+                    <input id="copyright-text-input" type="text" value="© 2024 Logger EMP" class="input input-bordered w-full" />
+                </div>
+                <button onclick="updateAppSettings()" class="btn btn-primary w-full">Save Branding</button>
+            </div>
+        </div>
+
+        <!-- Security -->
+        <div class="bg-base-100 rounded-2xl p-6 shadow-lg border border-base-content/5">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 bg-red-500/10 rounded-lg">
+                    <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold">Security</h2>
+            </div>
+            <form id="password-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">Current Password</label>
+                    <input id="current-password" type="password" class="input input-bordered w-full" required />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">New Password</label>
+                    <input id="new-password" type="password" class="input input-bordered w-full" required />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-2">Confirm Password</label>
+                    <input id="confirm-password" type="password" class="input input-bordered w-full" required />
+                </div>
+                <button type="button" onclick="updatePassword()" class="btn btn-secondary w-full">Update Password</button>
+            </form>
+        </div>
+
+        <!-- System Info -->
+        <div class="bg-base-100 rounded-2xl p-6 shadow-lg border border-base-content/5">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 bg-green-500/10 rounded-lg">
+                    <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold">System Information</h2>
+            </div>
+            <div id="os-info" class="grid grid-cols-2 gap-4 text-sm">
+                <div class="loading loading-spinner loading-sm col-span-2"></div>
+            </div>
+        </div>
+
+        <!-- About -->
+        <div class="bg-base-100 rounded-2xl p-6 shadow-lg border border-base-content/5">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 bg-purple-500/10 rounded-lg">
+                    <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-xl font-semibold">About</h2>
+            </div>
+            <div class="space-y-4 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-base-content/60">Version</span>
+                    <span class="font-mono" id="app-version">1.0.0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-base-content/60">Build</span>
+                    <span class="font-mono" id="app-build">2024.12.10</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-base-content/60">License</span>
+                    <span>MIT</span>
+                </div>
+                <div class="pt-4 border-t border-base-content/10">
+                    <p class="text-base-content/60 text-xs leading-relaxed">
+                        Logger EMP is a high-performance log management and server monitoring solution designed for speed and simplicity.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}

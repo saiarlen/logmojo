@@ -37,6 +37,13 @@ A high-performance, centralized log management and server monitoring agent. Desi
 - **Row Highlighting**: Visual feedback for selected log entries
 - **Responsive Design**: Works on desktop and mobile devices
 
+### ⚙️ Settings & Customization
+- **Application Branding**: Customize app name and copyright text
+- **Logo Management**: Upload custom logo and favicon with toggle between text/image display
+- **Password Management**: Secure password change functionality with current password verification
+- **System Information**: Display system metrics, version info, and build details
+- **Persistent Settings**: Database storage for all customization preferences
+
 ### ⚙️ Advanced Service Management
 - **Dual View Modes**: Professional table view and compact card view
 - **Real-Time Status**: Live service status monitoring with auto-refresh
@@ -221,6 +228,13 @@ apps:
 - **Bulk Operations**: Efficient management of multiple services
 - **Service-Log Integration**: Seamless connection between services and their logs
 
+### 📝 Event Logging & Audit Trail
+- **Comprehensive Audit Logging**: All user actions logged with timestamps and user context
+- **File Rotation**: 10MB log files with 10-file retention for efficient storage
+- **Detailed Event Tracking**: Process kills, service management, settings changes, file uploads
+- **Structured Logging**: Consistent format with event type, user, and detailed information
+- **HTTP Request Logging**: Integrated Fiber middleware for complete request tracking
+
 ### 📅 Historical Log Search
 - **Date Range Selection**: Search logs from last 24 hours up to 30 days
 - **Smart File Selection**: Automatically selects relevant files based on modification time
@@ -358,6 +372,21 @@ GET /api/processes
 
 # Kill process
 POST /api/processes/kill
+```
+
+### Settings API
+```bash
+# Get app settings
+GET /api/settings/app
+
+# Update app settings (branding, logo, favicon)
+POST /api/settings/app
+
+# Change password
+POST /api/settings/password
+
+# Get system information
+GET /api/system/info
 ```
 
 ## 🔍 Log Search Logic (`internal/logs/logs.go`)

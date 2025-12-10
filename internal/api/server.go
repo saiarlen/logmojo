@@ -6,23 +6,29 @@ import (
 	"local-monitor/internal/auth"
 	"local-monitor/internal/config"
 	"local-monitor/internal/db"
+	"local-monitor/internal/logger"
 	"local-monitor/internal/logs"
 	"local-monitor/internal/metrics"
 	"local-monitor/internal/processes"
 	"local-monitor/internal/services"
 	"local-monitor/internal/ws"
 	"log"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	fiberlogger "github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func Setup(app *fiber.App) {
-	app.Use(logger.New())
+	app.Use(fiberlogger.New(fiberlogger.Config{
+		Output: logger.GetLogWriter(),
+		Format: "[${time}] ${status} | ${latency} | ${ip} | ${method} | ${path} | ${error}\n",
+	}))
 	app.Use(cors.New())
 
 	// Serve static files
@@ -44,15 +50,35 @@ func Setup(app *fiber.App) {
 
 	// Page Routes
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.Render("dashboard", fiber.Map{
+		settings, _ := db.GetAppSettings()
+		data := fiber.Map{
 			"current_page": "dashboard",
-		})
+			"app_name": "Local Monitor",
+			"copyright_text": "© 2024 Logger EMP",
+			"logo_type": "text",
+		}
+		if settings != nil {
+			data["app_name"] = settings["app_name"]
+			data["copyright_text"] = settings["copyright_text"]
+			data["logo_type"] = settings["logo_type"]
+		}
+		return c.Render("dashboard", data)
 	})
 
 	app.Get("/logs", func(c *fiber.Ctx) error {
-		return c.Render("logs", fiber.Map{
+		settings, _ := db.GetAppSettings()
+		data := fiber.Map{
 			"current_page": "logs",
-		})
+			"app_name": "Local Monitor",
+			"copyright_text": "© 2024 Logger EMP",
+			"logo_type": "text",
+		}
+		if settings != nil {
+			data["app_name"] = settings["app_name"]
+			data["copyright_text"] = settings["copyright_text"]
+			data["logo_type"] = settings["logo_type"]
+		}
+		return c.Render("logs", data)
 	})
 
 	// API Group
@@ -102,22 +128,70 @@ func Setup(app *fiber.App) {
 	})
 
 	app.Get("/processes", func(c *fiber.Ctx) error {
-		return c.Render("processes", fiber.Map{
+		settings, _ := db.GetAppSettings()
+		data := fiber.Map{
 			"current_page": "processes",
-		})
+			"app_name": "Local Monitor",
+			"copyright_text": "© 2024 Logger EMP",
+			"logo_type": "text",
+		}
+		if settings != nil {
+			data["app_name"] = settings["app_name"]
+			data["copyright_text"] = settings["copyright_text"]
+			data["logo_type"] = settings["logo_type"]
+		}
+		return c.Render("processes", data)
 	})
 
 	app.Get("/services", func(c *fiber.Ctx) error {
-		return c.Render("services", fiber.Map{
+		settings, _ := db.GetAppSettings()
+		data := fiber.Map{
 			"current_page": "services",
-		})
+			"app_name": "Local Monitor",
+			"copyright_text": "© 2024 Logger EMP",
+			"logo_type": "text",
+		}
+		if settings != nil {
+			data["app_name"] = settings["app_name"]
+			data["copyright_text"] = settings["copyright_text"]
+			data["logo_type"] = settings["logo_type"]
+		}
+		return c.Render("services", data)
 	})
 
 	app.Get("/alerts", func(c *fiber.Ctx) error {
-		return c.Render("alerts", fiber.Map{
+		settings, _ := db.GetAppSettings()
+		data := fiber.Map{
 			"current_page": "alerts",
-		})
+			"app_name": "Local Monitor",
+			"copyright_text": "© 2024 Logger EMP",
+			"logo_type": "text",
+		}
+		if settings != nil {
+			data["app_name"] = settings["app_name"]
+			data["copyright_text"] = settings["copyright_text"]
+			data["logo_type"] = settings["logo_type"]
+		}
+		return c.Render("alerts", data)
 	})
+
+	app.Get("/settings", func(c *fiber.Ctx) error {
+		settings, _ := db.GetAppSettings()
+		data := fiber.Map{
+			"current_page": "settings",
+			"app_name": "Local Monitor",
+			"copyright_text": "© 2024 Logger EMP",
+			"logo_type": "text",
+		}
+		if settings != nil {
+			data["app_name"] = settings["app_name"]
+			data["copyright_text"] = settings["copyright_text"]
+			data["logo_type"] = settings["logo_type"]
+		}
+		return c.Render("settings", data)
+	})
+
+
 
 	api := app.Group("/api")
 
@@ -194,12 +268,14 @@ func Setup(app *fiber.App) {
 
 	api.Post("/processes/kill", func(c *fiber.Ctx) error {
 		type KillReq struct {
-			PID int32 `json:"pid"`
+			PID  int32  `json:"pid"`
+			Name string `json:"name"`
 		}
 		var req KillReq
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
 		}
+		logger.LogEvent("PROCESS_KILL", c.Locals("username").(string), fmt.Sprintf("PID: %d, Name: %s", req.PID, req.Name))
 		if err := processes.KillProcess(req.PID); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
@@ -362,6 +438,106 @@ func Setup(app *fiber.App) {
 		return c.JSON(fiber.Map{"status": "resolved"})
 	})
 
+	// Settings API
+	api.Post("/settings/password", func(c *fiber.Ctx) error {
+		type PasswordReq struct {
+			CurrentPassword string `json:"current_password"`
+			NewPassword     string `json:"new_password"`
+		}
+		var req PasswordReq
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
+		}
+		
+		username := c.Locals("username").(string)
+		if !auth.Login(username, req.CurrentPassword) {
+			return c.Status(400).JSON(fiber.Map{"error": "Invalid current password"})
+		}
+		
+		logger.LogEvent("PASSWORD_CHANGE", username, "User changed password")
+		if err := auth.UpdatePassword(username, req.NewPassword); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to update password"})
+		}
+		
+		return c.JSON(fiber.Map{"status": "success"})
+	})
+
+	api.Post("/settings/app", func(c *fiber.Ctx) error {
+		appName := c.FormValue("app_name")
+		copyrightText := c.FormValue("copyright_text")
+		logoType := c.FormValue("logo_type")
+		
+		logger.LogEvent("SETTINGS_UPDATE", c.Locals("username").(string), fmt.Sprintf("App: %s, Logo: %s", appName, logoType))
+		
+		// Handle logo upload
+		if logoFile, err := c.FormFile("logo"); err == nil {
+			logoPath := "./public/images/logo." + strings.Split(logoFile.Filename, ".")[1]
+			if err := c.SaveFile(logoFile, logoPath); err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": "Failed to save logo"})
+			}
+			logger.LogEvent("LOGO_UPLOAD", c.Locals("username").(string), logoFile.Filename)
+		}
+		
+		// Handle favicon upload
+		if faviconFile, err := c.FormFile("favicon"); err == nil {
+			faviconPath := "./public/images/favicon." + strings.Split(faviconFile.Filename, ".")[1]
+			if err := c.SaveFile(faviconFile, faviconPath); err != nil {
+				return c.Status(500).JSON(fiber.Map{"error": "Failed to save favicon"})
+			}
+			logger.LogEvent("FAVICON_UPLOAD", c.Locals("username").(string), faviconFile.Filename)
+		}
+		
+		// Save settings to database
+		if err := db.SaveAppSettings(appName, copyrightText, logoType); err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": "Failed to save settings"})
+		}
+		
+		return c.JSON(fiber.Map{"status": "success"})
+	})
+
+	api.Get("/settings/app", func(c *fiber.Ctx) error {
+		settings, err := db.GetAppSettings()
+		if err != nil {
+			return c.JSON(fiber.Map{
+				"app_name": "Local Monitor",
+				"copyright_text": "© 2024 Logger EMP",
+				"logo_type": "text",
+			})
+		}
+		return c.JSON(settings)
+	})
+
+
+
+	api.Get("/system/info", func(c *fiber.Ctx) error {
+		m, err := metrics.GetHostMetrics()
+		if err != nil {
+			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
+		}
+		
+		// Try to get git info, fallback to defaults
+		version := "1.0.0"
+		build := "2024.12.10"
+		
+		// Try git commands
+		if gitVersion, err := exec.Command("git", "describe", "--tags", "--always").Output(); err == nil {
+			version = strings.TrimSpace(string(gitVersion))
+		}
+		if gitBuild, err := exec.Command("git", "log", "-1", "--format=%cd", "--date=short").Output(); err == nil {
+			build = strings.TrimSpace(string(gitBuild))
+		}
+		
+		return c.JSON(fiber.Map{
+			"os":       "macOS",
+			"platform": "darwin",
+			"arch":     "amd64",
+			"hostname": "localhost",
+			"uptime":   m.Uptime,
+			"version":  version,
+			"build":    build,
+		})
+	})
+
 	// Services API
 	api.Get("/services", func(c *fiber.Ctx) error {
 		serviceList, err := services.GetAllServices()
@@ -380,6 +556,8 @@ func Setup(app *fiber.App) {
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
 		}
+
+		logger.LogEvent("SERVICE_"+strings.ToUpper(action), c.Locals("username").(string), fmt.Sprintf("Service: %s", req.ServiceName))
 
 		var err error
 		switch action {
@@ -430,4 +608,5 @@ func Setup(app *fiber.App) {
 	app.Get("/api/ws/metrics", websocket.New(ws.MetricsHandler))
 	app.Get("/api/ws/processes", websocket.New(ws.ProcessesHandler))
 	app.Get("/api/ws/alerts", websocket.New(ws.AlertsHandler))
+
 }

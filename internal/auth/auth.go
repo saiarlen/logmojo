@@ -44,6 +44,14 @@ func CreateDefaultUser() {
 	}
 }
 
+func UpdatePassword(username, newPassword string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	return db.UpdateUser(username, string(hash))
+}
+
 func NewAuthMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		// potential for session check here if using cookies
