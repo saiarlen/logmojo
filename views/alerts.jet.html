@@ -12,6 +12,8 @@
   let alertHistory = [];
   let currentView = 'rules';
   let alertSocket = null;
+  let currentPage = 1;
+  const itemsPerPage = 20;
 
   // Simple toast notification function
   function showToast(message, type = 'info') {
@@ -213,102 +215,74 @@
     }
 
     container.innerHTML = `
-      <div class="space-y-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         ${alertRules.map(rule => createRuleCard(rule)).join('')}
       </div>
     `;
   }
 
   function createRuleCard(rule) {
-    const statusColor = rule.enabled ? 'success' : 'neutral';
-    const statusIcon = rule.enabled ? '🟢' : '⚪';
-    
     return `
-      <div class="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md hover:border-primary/50 transition-all duration-200">
-        <div class="card-body p-4">
-          <div class="flex items-start justify-between mb-4">
-            <div class="flex-1">
-              <div class="flex items-center gap-3 mb-2">
-                <div class="flex items-center gap-1">
-                  ${rule.enabled ? 
-                    '<div class="w-2 h-2 rounded-full bg-success"></div>' : 
-                    '<div class="w-2 h-2 rounded-full bg-error/60 border border-error"></div>'
-                  }
-                </div>
-                <h3 class="text-lg font-medium ${rule.enabled ? 'text-base-content' : 'text-base-content/50'}">${rule.name}</h3>
-                <div class="badge badge-${getSeverityColor(rule.severity)} badge-sm">${rule.severity.toUpperCase()}</div>
-                ${!rule.enabled ? '<div class="badge badge-ghost badge-sm text-base-content/50">DISABLED</div>' : ''}
-              </div>
-              <p class="text-base-content/60 mb-3 text-sm">${rule.description || 'No description provided'}</p>
-              
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-base-content/60">Type:</span>
-                  <span class="badge badge-outline">${getTypeDisplay(rule.type)}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="font-medium text-base-content/60">Email:</span>
-                  <span class="${rule.email_enabled ? 'text-success' : 'text-base-content/50'}">${rule.email_enabled ? '✅ Enabled' : '❌ Disabled'}</span>
-                </div>
-                ${rule.type === 'system_metric' ? `
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-base-content/60">Condition:</span>
-                    <span class="font-mono text-xs">${rule.condition}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-base-content/60">Threshold:</span>
-                    <span class="font-mono text-xs">${rule.threshold}%</span>
-                  </div>
-                ` : ''}
-                ${rule.type === 'log_pattern' || rule.type === 'exception_detection' ? `
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-base-content/60">Pattern:</span>
-                    <span class="font-mono text-xs truncate">${rule.log_pattern || 'Auto-detect'}</span>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-medium text-base-content/60">App Filter:</span>
-                    <span class="text-xs">${rule.app_filter || 'All Apps'}</span>
-                  </div>
-                ` : ''}
-              </div>
+      <div class="card bg-base-100 shadow-sm border border-base-300 hover:shadow-md hover:border-primary/50 transition-all duration-200 h-full">
+        <div class="card-body p-4 flex flex-col">
+          <!-- Header -->
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-3 h-3 rounded-full ${rule.enabled ? 'bg-success' : 'bg-error/60 border border-error'}"></div>
+              <div class="badge badge-${getSeverityColor(rule.severity)} badge-sm px-2">${rule.severity.toUpperCase()}</div>
+              ${!rule.enabled ? '<div class="badge badge-ghost badge-sm px-2">DISABLED</div>' : ''}
             </div>
-            
             <div class="dropdown dropdown-end">
-              <button class="btn btn-ghost btn-sm" tabindex="0">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <button class="btn btn-ghost btn-xs" tabindex="0">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
                 </svg>
               </button>
-              <ul class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-52 border" tabindex="0">
-                <li><a onclick="editRule('${rule.id}')" class="flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                  </svg>
-                  Edit Rule
-                </a></li>
-                <li><a onclick="toggleRule('${rule.id}', ${!rule.enabled})" class="flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                  </svg>
-                  ${rule.enabled ? 'Disable' : 'Enable'}
-                </a></li>
-                <li><a onclick="deleteRule('${rule.id}')" class="text-error flex items-center gap-2">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                  </svg>
-                  Delete
-                </a></li>
+              <ul class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-40 border z-10" tabindex="0">
+                <li><a onclick="editRule('${rule.id}')" class="text-xs">Edit</a></li>
+                <li><a onclick="toggleRule('${rule.id}', ${!rule.enabled})" class="text-xs">${rule.enabled ? 'Disable' : 'Enable'}</a></li>
+                <li><a onclick="deleteRule('${rule.id}')" class="text-error text-xs">Delete</a></li>
               </ul>
             </div>
           </div>
           
+          <!-- Title -->
+          <h3 class="font-semibold text-base ${rule.enabled ? 'text-base-content' : 'text-base-content/50'} mb-2 line-clamp-2">${rule.name}</h3>
+          
+          <!-- Description -->
+          <p class="text-base-content/60 text-sm mb-3 line-clamp-2 flex-grow">${rule.description || 'No description provided'}</p>
+          
+          <!-- Details -->
+          <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-base-content/60">Type:</span>
+              <span class="badge badge-outline badge-xs px-2 py-2">${getTypeDisplay(rule.type)}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-base-content/60">Email:</span>
+              <span class="${rule.email_enabled ? 'text-success' : 'text-base-content/50'}">${rule.email_enabled ? '&#10003;' : '&#10007;'}</span>
+            </div>
+            ${rule.type === 'system_metric' ? `
+              <div class="flex items-center justify-between">
+                <span class="text-base-content/60">Threshold:</span>
+                <span class="font-mono">${rule.threshold}%</span>
+              </div>
+            ` : ''}
+            ${rule.type === 'log_pattern' || rule.type === 'exception_detection' ? `
+              <div class="flex items-center justify-between">
+                <span class="text-base-content/60">App:</span>
+                <span class="truncate ml-2">${rule.app_filter || 'All'}</span>
+              </div>
+            ` : ''}
+          </div>
+          
           ${rule.last_triggered ? `
-            <div class="bg-base-200/50 rounded-lg px-3 py-2 border border-base-300/50">
+            <div class="mt-3 pt-3 border-t border-base-300">
               <div class="flex items-center gap-2 text-base-content/60">
                 <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
                 </svg>
-                <span class="text-xs">Last triggered: ${new Date(rule.last_triggered).toLocaleString()}</span>
+                <span class="text-xs">Last Triggered: ${new Date(rule.last_triggered).toLocaleDateString()}</span>
               </div>
             </div>
           ` : ''}
@@ -329,37 +303,90 @@
 
   function renderAlertHistory() {
     const tbody = document.getElementById('alerts-body');
+    const mobileContainer = document.getElementById('mobile-alerts');
     
-    if (!tbody) {
+    if (!tbody && !mobileContainer) {
       return;
     }
     
     if (!alertHistory || alertHistory.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-base-content/60">No alerts recorded.</td></tr>';
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-base-content/60">No alerts recorded.</td></tr>';
+      }
+      if (mobileContainer) {
+        mobileContainer.innerHTML = '<div class="text-center py-8 text-base-content/60">No alerts recorded.</div>';
+      }
+      updatePagination(0);
       return;
     }
 
-    tbody.innerHTML = alertHistory.map(alert => `
-      <tr class="hover:bg-base-50">
-        <td class="text-sm">${new Date(alert.timestamp).toLocaleString()}</td>
-        <td><span class="badge badge-${getSeverityColor(alert.severity)} badge-sm">${alert.severity || 'medium'}</span></td>
-        <td class="font-medium">${alert.type}</td>
-        <td class="max-w-xs">
-          <div class="truncate" title="${alert.message}">${alert.message}</div>
-        </td>
-        <td>
-          <span class="badge ${alert.resolved ? 'badge-success' : 'badge-error'} badge-outline badge-sm">
-            ${alert.resolved ? 'Resolved' : 'Active'}
-          </span>
-        </td>
-        <td>
-          <div class="flex gap-1">
+    // Pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedAlerts = alertHistory.slice(startIndex, endIndex);
+
+    // Render desktop table
+    if (tbody) {
+      tbody.innerHTML = paginatedAlerts.map(alert => `
+        <tr class="hover:bg-base-50">
+          <td class="text-sm">${new Date(alert.timestamp).toLocaleString()}</td>
+          <td><span class="badge badge-${getSeverityColor(alert.severity)} badge-sm">${alert.severity || 'medium'}</span></td>
+          <td class="font-medium">${alert.type}</td>
+          <td class="max-w-xs">
+            <div class="truncate" title="${alert.message}">${alert.message}</div>
+          </td>
+          <td>
+            <span class="badge ${alert.resolved ? 'badge-success' : 'badge-error'} badge-outline badge-sm">
+              ${alert.resolved ? 'Resolved' : 'Active'}
+            </span>
+          </td>
+          <td>
+            <div class="flex gap-1">
+              ${!alert.resolved ? `<button class="btn btn-xs btn-success" onclick="resolveAlert(${alert.id})">Resolve</button>` : ''}
+              <button class="btn btn-xs btn-ghost" onclick="viewAlertDetails(${alert.id})">Details</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    // Render mobile cards
+    if (mobileContainer) {
+      mobileContainer.innerHTML = paginatedAlerts.map(alert => createAlertCard(alert)).join('');
+    }
+    
+    // Update pagination
+    updatePagination(alertHistory.length);
+  }
+  
+  function createAlertCard(alert) {
+    return `
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body p-4">
+          <div class="flex justify-between items-start mb-3">
+            <div class="flex items-center gap-2">
+              <span class="badge badge-${getSeverityColor(alert.severity)} badge-sm">${alert.severity || 'medium'}</span>
+              <span class="badge ${alert.resolved ? 'badge-success' : 'badge-error'} badge-outline badge-sm">
+                ${alert.resolved ? 'Resolved' : 'Active'}
+              </span>
+            </div>
+            <div class="text-xs text-base-content/60">
+              ${new Date(alert.timestamp).toLocaleString()}
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <h3 class="font-medium text-base-content mb-1">${alert.type}</h3>
+            <p class="text-sm text-base-content/80">${alert.message}</p>
+          </div>
+          
+          <div class="flex gap-2">
             ${!alert.resolved ? `<button class="btn btn-xs btn-success" onclick="resolveAlert(${alert.id})">Resolve</button>` : ''}
             <button class="btn btn-xs btn-ghost" onclick="viewAlertDetails(${alert.id})">Details</button>
           </div>
-        </td>
-      </tr>
-    `).join('');
+        </div>
+      </div>
+    `;
   }
 
   function getSeverityColor(severity) {
@@ -380,13 +407,7 @@
     document.getElementById('history-view').classList.add('hidden');
   }
 
-  function showHistoryView() {
-    currentView = 'history';
-    document.getElementById('history-tab').classList.add('tab-active');
-    document.getElementById('rules-tab').classList.remove('tab-active');
-    document.getElementById('history-view').classList.remove('hidden');
-    document.getElementById('rules-view').classList.add('hidden');
-  }
+
 
   function showCreateRuleModal() {
     const form = document.getElementById('rule-form');
@@ -566,11 +587,75 @@
     }
   }
 
+  function updatePagination(totalItems) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const pagination = document.getElementById('pagination');
+
+    if (totalPages <= 1) {
+      pagination.style.display = 'none';
+      return;
+    }
+
+    pagination.style.display = 'flex';
+    pagination.innerHTML = '';
+
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = `join-item btn btn-sm ${currentPage === 1 ? 'btn-disabled' : ''}`;
+    prevBtn.innerHTML = window.innerWidth < 640 ? '‹' : 'Previous';
+    prevBtn.onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderAlertHistory();
+      }
+    };
+    pagination.appendChild(prevBtn);
+
+    // Page numbers (show fewer on mobile)
+    const maxPages = window.innerWidth < 640 ? 3 : 5;
+    const startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
+    const endPage = Math.min(totalPages, startPage + maxPages - 1);
+    
+    for (let i = startPage; i <= endPage; i++) {
+      const pageBtn = document.createElement('button');
+      pageBtn.className = `join-item btn btn-sm ${i === currentPage ? 'btn-active' : ''}`;
+      pageBtn.textContent = i;
+      pageBtn.onclick = () => {
+        currentPage = i;
+        renderAlertHistory();
+      };
+      pagination.appendChild(pageBtn);
+    }
+
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = `join-item btn btn-sm ${currentPage === totalPages ? 'btn-disabled' : ''}`;
+    nextBtn.innerHTML = window.innerWidth < 640 ? '›' : 'Next';
+    nextBtn.onclick = () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderAlertHistory();
+      }
+    };
+    pagination.appendChild(nextBtn);
+  }
+
   function viewAlertDetails(id) {
     const alertData = alertHistory.find(a => a.id === id);
     if (!alertData) return;
     
     alert(`Alert Details:\n\nType: ${alertData.type}\nSeverity: ${alertData.severity || 'medium'}\nTime: ${new Date(alertData.timestamp).toLocaleString()}\nMessage: ${alertData.message}`);
+  }
+
+  // Reset pagination when switching views
+  function showHistoryView() {
+    currentView = 'history';
+    currentPage = 1;
+    document.getElementById('history-tab').classList.add('tab-active');
+    document.getElementById('rules-tab').classList.remove('tab-active');
+    document.getElementById('history-view').classList.remove('hidden');
+    document.getElementById('rules-view').classList.add('hidden');
+    renderAlertHistory();
   }
 
   init();
@@ -579,65 +664,73 @@
 
 {{ block body() }}
 <div class="min-h-screen bg-gradient-to-br from-base-200 to-base-300">
-  <div class="container mx-auto px-6 py-8">
+  <div class="container mx-auto px-4 lg:px-6 py-4 lg:py-8">
     <!-- Header -->
-    <div class="bg-base-100 rounded-2xl shadow-xl p-8 mb-8">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="p-3 bg-primary/10 rounded-xl">
-            <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="bg-base-100 rounded-2xl shadow-xl p-4 lg:p-8 mb-4 lg:mb-8">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-3 lg:gap-4">
+          <div class="p-2 lg:p-3 bg-primary/10 rounded-xl">
+            <svg class="w-6 h-6 lg:w-8 lg:h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
             </svg>
           </div>
           <div>
-            <h1 class="text-3xl font-bold text-base-content">Alert Management</h1>
-            <p class="text-base-content/60 mt-1">Monitor system metrics, log patterns, and exceptions</p>
+            <h1 class="text-xl lg:text-3xl font-bold text-base-content">Alert Management</h1>
+            <p class="text-base-content/60 mt-1 text-sm lg:text-base">Monitor system metrics, log patterns, and exceptions</p>
           </div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <button class="btn btn-outline btn-sm gap-2" onclick="testAlert()">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
             </svg>
-            Test Alert
+            <span class="hidden sm:inline">Test Alert</span>
           </button>
           <button class="btn btn-primary btn-sm gap-2" onclick="showCreateRuleModal()">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
             </svg>
-            Create Rule
+            <span class="hidden sm:inline">Create Rule</span>
           </button>
         </div>
       </div>
     </div>
 
     <!-- Tabs -->
-    <div class="bg-base-100 rounded-2xl shadow-xl mb-8">
+    <div class="bg-base-100 rounded-2xl shadow-xl mb-4 lg:mb-8">
       <div class="tabs tabs-boxed tabs-lg w-full bg-base-200">
-        <a id="rules-tab" class="tab gap-2 hover:bg-base-300 transition-all" onclick="showRulesView()">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a id="rules-tab" class="tab gap-2 hover:bg-base-300 transition-all text-sm lg:text-base" onclick="showRulesView()">
+          <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
-          Alert Rules
+          <span class="hidden sm:inline">Alert Rules</span>
+          <span class="sm:hidden">Rules</span>
         </a>
-        <a id="history-tab" class="tab tab-active gap-2 hover:bg-base-300 transition-all" onclick="showHistoryView()">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a id="history-tab" class="tab tab-active gap-2 hover:bg-base-300 transition-all text-sm lg:text-base" onclick="showHistoryView()">
+          <svg class="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
-          Alert History
+          <span class="hidden sm:inline">Alert History</span>
+          <span class="sm:hidden">History</span>
         </a>
       </div>
       
       <!-- Rules View -->
-      <div id="rules-view" class="hidden p-8">
+      <div id="rules-view" class="hidden p-4 lg:p-8">
         <div id="rules-container">
           <!-- Rules will be rendered here -->
         </div>
       </div>
 
       <!-- History View -->
-      <div id="history-view" class="p-8">
-        <div class="overflow-x-auto">
+      <div id="history-view" class="p-4 lg:p-8">
+        <!-- Mobile Card View -->
+        <div class="block lg:hidden space-y-3" id="mobile-alerts">
+          <!-- Mobile alert cards will be populated here -->
+        </div>
+        
+        <!-- Desktop Table View -->
+        <div class="hidden lg:block overflow-x-auto">
           <table class="table table-zebra">
             <thead>
               <tr class="bg-base-200">
@@ -654,6 +747,13 @@
             </tbody>
           </table>
         </div>
+        
+        <!-- Pagination -->
+        <div class="flex justify-center mt-6">
+          <div class="join" id="pagination" style="display: none">
+            <!-- Pagination buttons populated by JavaScript -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -662,8 +762,8 @@
 <!-- Create/Edit Rule Modal -->
 <input type="checkbox" id="rule-modal" class="modal-toggle" />
 <div class="modal">
-  <div class="modal-box w-11/12 max-w-3xl">
-    <h3 id="rule-modal-title" class="font-bold text-xl mb-6">Create Alert Rule</h3>
+  <div class="modal-box w-11/12 max-w-3xl max-h-[90vh] overflow-y-auto">
+    <h3 id="rule-modal-title" class="font-bold text-lg lg:text-xl mb-4 lg:mb-6">Create Alert Rule</h3>
     
     <form id="rule-form" onsubmit="event.preventDefault(); saveRule();">
       <input type="hidden" name="id" id="rule-id">

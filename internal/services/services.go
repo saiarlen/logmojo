@@ -27,6 +27,7 @@ type ServiceStatus struct {
 	ConfigPath  string    `json:"config_path"`
 	LogPath     string    `json:"log_path"`
 	LastRestart time.Time `json:"last_restart"`
+	Version     string    `json:"version"`
 }
 
 func GetAllServices() ([]ServiceStatus, error) {
@@ -53,6 +54,9 @@ func GetAllServices() ([]ServiceStatus, error) {
 				status.Active = false
 				status.Loaded = false
 			}
+			
+			// Get service version
+			status.Version = getServiceVersion(svc.ServiceName)
 			
 			services = append(services, status)
 		}
@@ -199,6 +203,85 @@ func CheckConfigFile(configPath string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func getServiceVersion(serviceName string) string {
+	// Try common version commands for different services
+	versionCommands := map[string][]string{
+		"nginx":      {"nginx", "-v"},
+		"apache2":    {"apache2", "-v"},
+		"httpd":      {"httpd", "-v"},
+		"mysql":      {"mysql", "--version"},
+		"mysqld":     {"mysqld", "--version"},
+		"postgresql": {"postgres", "--version"},
+		"postgres":   {"postgres", "--version"},
+		"redis":      {"redis-server", "--version"},
+		"docker":     {"docker", "--version"},
+		"ssh":        {"ssh", "-V"},
+		"sshd":       {"sshd", "-V"},
+	}
+	
+	// Try service-specific version command
+	if cmd, exists := versionCommands[serviceName]; exists {
+		if version := tryVersionCommand(cmd); version != "" {
+			return version
+		}
+	}
+	
+	// Try generic version commands
+	genericCommands := [][]string{
+		{serviceName, "--version"},
+		{serviceName, "-v"},
+		{serviceName, "version"},
+	}
+	
+	for _, cmd := range genericCommands {
+		if version := tryVersionCommand(cmd); version != "" {
+			return version
+		}
+	}
+	
+	return "N/A"
+}
+
+func tryVersionCommand(cmdArgs []string) string {
+	if len(cmdArgs) < 2 {
+		return ""
+	}
+	
+	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return ""
+	}
+	
+	outputStr := strings.TrimSpace(string(output))
+	lines := strings.Split(outputStr, "\n")
+	
+	// Extract version from first line (most common)
+	if len(lines) > 0 {
+		line := lines[0]
+		// Common version patterns
+		versionPatterns := []*regexp.Regexp{
+			regexp.MustCompile(`version\s+([\d\.]+[\w\-\.]*)`),
+			regexp.MustCompile(`([\d]+\.[\d]+[\w\-\.]*)`),
+			regexp.MustCompile(`v([\d\.]+[\w\-\.]*)`),
+		}
+		
+		for _, pattern := range versionPatterns {
+			if matches := pattern.FindStringSubmatch(strings.ToLower(line)); len(matches) > 1 {
+				return matches[1]
+			}
+		}
+		
+		// If no pattern matches, return first 50 chars of output
+		if len(line) > 50 {
+			return line[:50] + "..."
+		}
+		return line
+	}
+	
+	return ""
 }
 
 func ValidateServiceConfig(serviceName string) ([]string, error) {

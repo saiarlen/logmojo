@@ -16,7 +16,10 @@
   }
 
   function renderServices() {
-    if (viewMode === 'table') {
+    // Force card view on mobile
+    if (window.innerWidth < 1024) {
+      renderCardView();
+    } else if (viewMode === 'table') {
       renderTableView();
     } else {
       renderCardView();
@@ -67,6 +70,7 @@
           <div>
             <div class="font-medium text-base-content">${service.name}</div>
             <div class="text-xs text-base-content/50 mt-1">${service.description}</div>
+            <div class="text-xs font-mono text-primary mt-1">v${service.version || 'N/A'}</div>
           </div>
         </td>
         <td class="text-center py-4">
@@ -130,7 +134,7 @@
     }
 
     container.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-4">
         ${services.map(service => createServiceCard(service)).join('')}
       </div>
     `;
@@ -140,20 +144,26 @@
     const statusTextColor = getStatusTextColor(service.status);
     
     return `
-      <div class="bg-base-100 rounded-lg border border-base-300 hover:border-primary/30 transition-all duration-200 p-4">
+      <div class="bg-base-100 rounded-lg border border-base-300 hover:border-primary/30 transition-all duration-200 p-3 lg:p-4">
         <!-- Header -->
         <div class="flex items-start justify-between mb-3">
-          <div>
-            <h3 class="font-bold text-base text-base-content">${service.name}</h3>
-            <p class="text-xs text-base-content/60 mt-1">${service.description}</p>
+          <div class="min-w-0 flex-1">
+            <h3 class="font-bold text-sm lg:text-base text-base-content truncate">${service.name}</h3>
+            <p class="text-xs text-base-content/60 mt-1 line-clamp-2">${service.description}</p>
           </div>
-          <span class="font-bold text-xs ${statusTextColor}">
+          <span class="font-bold text-xs ${statusTextColor} ml-2 flex-shrink-0">
             ${service.status.toUpperCase()}
           </span>
         </div>
         
+        <!-- Version Info -->
+        <div class="mb-3">
+          <div class="text-xs text-base-content/60">Version</div>
+          <div class="font-mono text-xs font-medium text-primary">${service.version || 'N/A'}</div>
+        </div>
+        
         <!-- Metrics Grid -->
-        <div class="grid grid-cols-4 gap-2 mb-3 text-xs">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3 text-xs">
           <div class="text-center">
             <div class="text-base-content/60">CPU</div>
             <div class="font-mono font-medium">${service.cpu_usage || '-'}</div>
@@ -173,28 +183,43 @@
         </div>
         
         <!-- Action Buttons -->
-        <div class="grid grid-cols-5 gap-1">
+        <div class="grid grid-cols-3 lg:grid-cols-5 gap-1">
           <button class="btn btn-xs text-white bg-green-600 hover:bg-green-700 border-green-600" 
                   onclick="serviceAction('start', '${service.service_name}', this)" 
                   ${service.active ? 'disabled' : ''}>
-            Start
+            <span class="hidden sm:inline">Start</span>
+            <span class="sm:hidden">▶</span>
           </button>
           <button class="btn btn-xs text-white bg-red-600 hover:bg-red-700 border-red-600" 
                   onclick="serviceAction('stop', '${service.service_name}', this)"
                   ${!service.active ? 'disabled' : ''}>
-            Stop
+            <span class="hidden sm:inline">Stop</span>
+            <span class="sm:hidden">⏹</span>
           </button>
           <button class="btn btn-xs text-white bg-blue-600 hover:bg-blue-700 border-blue-600" 
                   onclick="serviceAction('restart', '${service.service_name}', this)">
-            Restart
+            <span class="hidden sm:inline">Restart</span>
+            <span class="sm:hidden">🔄</span>
           </button>
-          <button class="btn btn-xs text-white bg-purple-600 hover:bg-purple-700 border-purple-600" 
+          <button class="btn btn-xs text-white bg-purple-600 hover:bg-purple-700 border-purple-600 hidden lg:block" 
                   onclick="viewServiceLogs('${service.service_name}')">
             Logs
           </button>
-          <button class="btn btn-xs text-white bg-gray-600 hover:bg-gray-700 border-gray-600" 
+          <button class="btn btn-xs text-white bg-gray-600 hover:bg-gray-700 border-gray-600 hidden lg:block" 
                   onclick="copyConfigPath('${service.config_path}')">
             Config
+          </button>
+        </div>
+        
+        <!-- Mobile Additional Actions -->
+        <div class="grid grid-cols-2 gap-1 mt-2 lg:hidden">
+          <button class="btn btn-xs text-white bg-purple-600 hover:bg-purple-700 border-purple-600" 
+                  onclick="viewServiceLogs('${service.service_name}')">
+            📋 Logs
+          </button>
+          <button class="btn btn-xs text-white bg-gray-600 hover:bg-gray-700 border-gray-600" 
+                  onclick="copyConfigPath('${service.config_path}')">
+            ⚙️ Config
           </button>
         </div>
       </div>
@@ -335,6 +360,11 @@
     }
   }
 
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    renderServices();
+  });
+
   // Initialize
   loadServices();
   startAutoRefresh();
@@ -345,38 +375,38 @@
 <div class="flex h-[calc(100vh-6rem)] flex-col bg-base-100">
   <!-- Header -->
   <div class="bg-gradient-to-r from-base-200 to-base-300 border-b border-base-300">
-    <div class="flex items-center justify-between p-6">
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between p-4 lg:p-6 gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-base-content flex items-center gap-2">
+        <h1 class="text-xl lg:text-2xl font-bold text-base-content flex items-center gap-2">
           <span class="text-primary">⚙️</span> Services Manager
         </h1>
         <p class="text-base-content/70 text-sm mt-1">Monitor and manage system services</p>
       </div>
-      <div class="flex gap-2">
-        <button id="view-toggle-btn" class="btn btn-ghost btn-sm" onclick="toggleView()">
+      <div class="flex flex-wrap gap-2">
+        <button id="view-toggle-btn" class="btn btn-ghost btn-sm hidden lg:flex" onclick="toggleView()">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
           </svg>
-          Cards
+          <span class="hidden sm:inline">Cards</span>
         </button>
         <button id="auto-refresh-btn" class="btn btn-ghost btn-sm border border-green-300 text-green-600" onclick="toggleAutoRefresh()">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
-          Auto Refresh: ON
+          <span class="hidden sm:inline">Auto Refresh: ON</span>
         </button>
         <button class="btn btn-primary btn-sm" onclick="loadServices()">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
-          Refresh
+          <span class="hidden sm:inline">Refresh</span>
         </button>
       </div>
     </div>
   </div>
 
   <!-- Services Container -->
-  <div class="flex-1 overflow-auto p-6">
+  <div class="flex-1 overflow-auto p-4 lg:p-6">
     <div id="services-container">
       <!-- Loading state -->
       <div class="text-center py-16">
@@ -389,13 +419,13 @@
 
 <!-- Logs Modal -->
 <dialog id="logs-modal" class="modal">
-  <div class="modal-box w-11/12 max-w-5xl h-3/4">
+  <div class="modal-box w-11/12 max-w-5xl h-3/4 max-h-[90vh]">
     <form method="dialog">
       <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
     </form>
-    <h3 id="logs-title" class="font-bold text-lg mb-4">Service Logs</h3>
-    <div class="bg-base-200 rounded-lg p-4 h-full overflow-auto">
-      <div id="logs-content" class="font-mono text-sm">
+    <h3 id="logs-title" class="font-bold text-base lg:text-lg mb-4 pr-8">Service Logs</h3>
+    <div class="bg-base-200 rounded-lg p-2 lg:p-4 h-full overflow-auto">
+      <div id="logs-content" class="font-mono text-xs lg:text-sm">
         <!-- Logs content -->
       </div>
     </div>
