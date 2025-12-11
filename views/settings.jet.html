@@ -107,9 +107,13 @@ async function loadSystemInfo() {
         // Load version info
         if (info.version) {
             document.getElementById('app-version').textContent = info.version;
-            document.getElementById('footer-version').textContent = 'v' + info.version;
+            document.getElementById('footer-version').textContent = info.version;
         }
-        if (info.build) document.getElementById('app-build').textContent = info.build;
+        if (info.buildDate) document.getElementById('app-build').textContent = new Date(info.buildDate).toLocaleDateString();
+        if (info.commit) {
+            const commitElement = document.getElementById('app-commit');
+            if (commitElement) commitElement.textContent = info.commit.substring(0, 7);
+        }
     } catch (e) {
         document.getElementById('os-info').innerHTML = '<div class="text-error col-span-2">Failed to load system info</div>';
     }
@@ -252,11 +256,15 @@ loadAppSettings();
             <div class="space-y-4 text-sm">
                 <div class="flex justify-between">
                     <span class="text-base-content/60">Version</span>
-                    <span class="font-mono" id="app-version">1.0.0</span>
+                    <span class="font-mono" id="app-version">{{ version }}</span>
                 </div>
                 <div class="flex justify-between">
-                    <span class="text-base-content/60">Build</span>
-                    <span class="font-mono" id="app-build">2024.12.10</span>
+                    <span class="text-base-content/60">Commit</span>
+                    <span class="font-mono" id="app-commit">-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-base-content/60">Build Date</span>
+                    <span class="font-mono" id="app-build">-</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-base-content/60">License</span>

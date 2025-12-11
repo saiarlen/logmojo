@@ -11,9 +11,9 @@ import (
 	"local-monitor/internal/metrics"
 	"local-monitor/internal/processes"
 	"local-monitor/internal/services"
+	"local-monitor/internal/version"
 	"local-monitor/internal/ws"
 	"log"
-	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -56,6 +56,7 @@ func Setup(app *fiber.App) {
 			"app_name": "Local Monitor",
 			"copyright_text": "© 2024 Logger EMP",
 			"logo_type": "text",
+			"version": version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -72,6 +73,7 @@ func Setup(app *fiber.App) {
 			"app_name": "Local Monitor",
 			"copyright_text": "© 2024 Logger EMP",
 			"logo_type": "text",
+			"version": version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -134,6 +136,7 @@ func Setup(app *fiber.App) {
 			"app_name": "Local Monitor",
 			"copyright_text": "© 2024 Logger EMP",
 			"logo_type": "text",
+			"version": version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -150,6 +153,7 @@ func Setup(app *fiber.App) {
 			"app_name": "Local Monitor",
 			"copyright_text": "© 2024 Logger EMP",
 			"logo_type": "text",
+			"version": version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -166,6 +170,7 @@ func Setup(app *fiber.App) {
 			"app_name": "Local Monitor",
 			"copyright_text": "© 2024 Logger EMP",
 			"logo_type": "text",
+			"version": version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -182,6 +187,7 @@ func Setup(app *fiber.App) {
 			"app_name": "Local Monitor",
 			"copyright_text": "© 2024 Logger EMP",
 			"logo_type": "text",
+			"version": version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -515,26 +521,15 @@ func Setup(app *fiber.App) {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
 		
-		// Try to get git info, fallback to defaults
-		version := "1.0.0"
-		build := "2024.12.10"
-		
-		// Try git commands
-		if gitVersion, err := exec.Command("git", "describe", "--tags", "--always").Output(); err == nil {
-			version = strings.TrimSpace(string(gitVersion))
-		}
-		if gitBuild, err := exec.Command("git", "log", "-1", "--format=%cd", "--date=short").Output(); err == nil {
-			build = strings.TrimSpace(string(gitBuild))
-		}
-		
 		return c.JSON(fiber.Map{
-			"os":       "macOS",
-			"platform": "darwin",
-			"arch":     "amd64",
-			"hostname": "localhost",
-			"uptime":   m.Uptime,
-			"version":  version,
-			"build":    build,
+			"os":        "macOS",
+			"platform":  "darwin",
+			"arch":      "amd64",
+			"hostname":  "localhost",
+			"uptime":    m.Uptime,
+			"version":   version.Version,
+			"commit":    version.Commit,
+			"buildDate": version.BuildDate,
 		})
 	})
 
@@ -608,5 +603,14 @@ func Setup(app *fiber.App) {
 	app.Get("/api/ws/metrics", websocket.New(ws.MetricsHandler))
 	app.Get("/api/ws/processes", websocket.New(ws.ProcessesHandler))
 	app.Get("/api/ws/alerts", websocket.New(ws.AlertsHandler))
+
+	// Version API
+	app.Get("/version", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"version":   version.Version,
+			"commit":    version.Commit,
+			"buildDate": version.BuildDate,
+		})
+	})
 
 }
