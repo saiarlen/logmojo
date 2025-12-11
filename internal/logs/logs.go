@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"local-monitor/internal/config"
 	"log"
+	"logmojo/internal/config"
 	"os"
 	"os/exec"
 	"regexp"
@@ -200,7 +200,7 @@ func Search(query, appFilter, logFilter, specificFile, levelFilter string, limit
 		log.Printf("[LOGS] Too many files (%d), limiting to 3 most recent", len(filePaths))
 		// Get file info and sort by modification time
 		type fileInfo struct {
-			path string
+			path    string
 			modTime time.Time
 		}
 		var fileInfos []fileInfo

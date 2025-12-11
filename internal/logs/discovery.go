@@ -2,8 +2,8 @@ package logs
 
 import (
 	"fmt"
-	"local-monitor/internal/config"
 	"log"
+	"logmojo/internal/config"
 	"os"
 	"path/filepath"
 	"sort"
@@ -68,7 +68,7 @@ func ListFiles(appName, logName string) ([]LogFile, error) {
 			fInfo, _ := e.Info()
 			fullPath := filepath.Join(targetPath, e.Name())
 			name := strings.ToLower(e.Name())
-			
+
 			if !isLogFile(name) {
 				continue
 			}
@@ -125,7 +125,7 @@ func ListFiles(appName, logName string) ([]LogFile, error) {
 // isLogFile checks if a file is a log file (including archives)
 func isLogFile(name string) bool {
 	lower := strings.ToLower(name)
-	
+
 	// Common log file patterns
 	logPatterns := []string{".log", ".txt", ".out", ".err", ".trace"}
 	for _, pattern := range logPatterns {
@@ -133,7 +133,7 @@ func isLogFile(name string) bool {
 			return true
 		}
 	}
-	
+
 	// Archive extensions
 	archiveExts := []string{".gz", ".bz2", ".xz", ".lz4", ".zip"}
 	for _, ext := range archiveExts {
@@ -141,23 +141,23 @@ func isLogFile(name string) bool {
 			return true
 		}
 	}
-	
+
 	// Numbered rotations (app.log.1, app.log.2, etc.)
 	if strings.Contains(lower, ".log.") {
 		return true
 	}
-	
+
 	// Date-based rotations (app.log.2024-01-15)
 	if strings.Contains(lower, ".log.") && (strings.Contains(lower, "-") || strings.Contains(lower, "_")) {
 		return true
 	}
-	
+
 	return false
 }
 
 func isArchive(name string) bool {
 	lower := strings.ToLower(name)
-	
+
 	// Compressed archives
 	compressedExts := []string{".gz", ".bz2", ".xz", ".lz4", ".zip"}
 	for _, ext := range compressedExts {
@@ -165,7 +165,7 @@ func isArchive(name string) bool {
 			return true
 		}
 	}
-	
+
 	// Rotated files
 	rotationPatterns := []string{".1", ".2", ".3", ".4", ".5", ".old", ".bak"}
 	for _, pattern := range rotationPatterns {
@@ -173,11 +173,11 @@ func isArchive(name string) bool {
 			return true
 		}
 	}
-	
+
 	// Date-based rotations
 	if strings.Contains(lower, ".log.") && !strings.HasSuffix(lower, ".log") {
 		return true
 	}
-	
+
 	return false
 }

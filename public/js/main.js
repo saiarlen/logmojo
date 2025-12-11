@@ -1,5 +1,4 @@
 const API_BASE = '/api';
-const AUTH_TOKEN = 'secret-key'; // In a real app, this would be handled better
 
 function checkAuth(response) {
     if (response.status === 401 || response.status === 302) {
@@ -12,7 +11,6 @@ function checkAuth(response) {
 
 async function fetchAPI(endpoint, options = {}) {
     const headers = {
-        'X-Auth-Token': AUTH_TOKEN,
         'Content-Type': 'application/json',
         ...options.headers,
     };

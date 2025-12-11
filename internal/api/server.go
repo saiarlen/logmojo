@@ -2,18 +2,18 @@ package api
 
 import (
 	"fmt"
-	"local-monitor/internal/alerts"
-	"local-monitor/internal/auth"
-	"local-monitor/internal/config"
-	"local-monitor/internal/db"
-	"local-monitor/internal/logger"
-	"local-monitor/internal/logs"
-	"local-monitor/internal/metrics"
-	"local-monitor/internal/processes"
-	"local-monitor/internal/services"
-	"local-monitor/internal/version"
-	"local-monitor/internal/ws"
 	"log"
+	"logmojo/internal/alerts"
+	"logmojo/internal/auth"
+	"logmojo/internal/config"
+	"logmojo/internal/db"
+	"logmojo/internal/logger"
+	"logmojo/internal/logs"
+	"logmojo/internal/metrics"
+	"logmojo/internal/processes"
+	"logmojo/internal/services"
+	"logmojo/internal/version"
+	"logmojo/internal/ws"
 	"strconv"
 	"strings"
 	"time"
@@ -52,11 +52,11 @@ func Setup(app *fiber.App) {
 	app.Get("/", func(c *fiber.Ctx) error {
 		settings, _ := db.GetAppSettings()
 		data := fiber.Map{
-			"current_page": "dashboard",
-			"app_name": "Local Monitor",
-			"copyright_text": "© 2024 Logger EMP",
-			"logo_type": "text",
-			"version": version.Version,
+			"current_page":   "dashboard",
+			"app_name":       "Logmojo Monitor",
+			"copyright_text": "© 2024 Logmojo",
+			"logo_type":      "text",
+			"version":        version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -69,11 +69,11 @@ func Setup(app *fiber.App) {
 	app.Get("/logs", func(c *fiber.Ctx) error {
 		settings, _ := db.GetAppSettings()
 		data := fiber.Map{
-			"current_page": "logs",
-			"app_name": "Local Monitor",
-			"copyright_text": "© 2024 Logger EMP",
-			"logo_type": "text",
-			"version": version.Version,
+			"current_page":   "logs",
+			"app_name":       "Logmojo Monitor",
+			"copyright_text": "© 2024 Logmojo",
+			"logo_type":      "text",
+			"version":        version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -97,11 +97,11 @@ func Setup(app *fiber.App) {
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		if files == nil {
 			files = []logs.LogFile{}
 		}
-		
+
 		return c.JSON(files)
 	})
 
@@ -121,22 +121,22 @@ func Setup(app *fiber.App) {
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		if results == nil {
 			results = []logs.LogResult{}
 		}
-		
+
 		return c.JSON(results)
 	})
 
 	app.Get("/processes", func(c *fiber.Ctx) error {
 		settings, _ := db.GetAppSettings()
 		data := fiber.Map{
-			"current_page": "processes",
-			"app_name": "Local Monitor",
-			"copyright_text": "© 2024 Logger EMP",
-			"logo_type": "text",
-			"version": version.Version,
+			"current_page":   "processes",
+			"app_name":       "Logmojo Monitor",
+			"copyright_text": "© 2024 Logmojo",
+			"logo_type":      "text",
+			"version":        version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -149,11 +149,11 @@ func Setup(app *fiber.App) {
 	app.Get("/services", func(c *fiber.Ctx) error {
 		settings, _ := db.GetAppSettings()
 		data := fiber.Map{
-			"current_page": "services",
-			"app_name": "Local Monitor",
-			"copyright_text": "© 2024 Logger EMP",
-			"logo_type": "text",
-			"version": version.Version,
+			"current_page":   "services",
+			"app_name":       "Logmojo Monitor",
+			"copyright_text": "© 2024 Logmojo",
+			"logo_type":      "text",
+			"version":        version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -166,11 +166,11 @@ func Setup(app *fiber.App) {
 	app.Get("/alerts", func(c *fiber.Ctx) error {
 		settings, _ := db.GetAppSettings()
 		data := fiber.Map{
-			"current_page": "alerts",
-			"app_name": "Local Monitor",
-			"copyright_text": "© 2024 Logger EMP",
-			"logo_type": "text",
-			"version": version.Version,
+			"current_page":   "alerts",
+			"app_name":       "Logmojo Monitor",
+			"copyright_text": "© 2024 Logmojo",
+			"logo_type":      "text",
+			"version":        version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -183,11 +183,11 @@ func Setup(app *fiber.App) {
 	app.Get("/settings", func(c *fiber.Ctx) error {
 		settings, _ := db.GetAppSettings()
 		data := fiber.Map{
-			"current_page": "settings",
-			"app_name": "Local Monitor",
-			"copyright_text": "© 2024 Logger EMP",
-			"logo_type": "text",
-			"version": version.Version,
+			"current_page":   "settings",
+			"app_name":       "Logmojo Monitor",
+			"copyright_text": "© 2024 Logmojo",
+			"logo_type":      "text",
+			"version":        version.Version,
 		}
 		if settings != nil {
 			data["app_name"] = settings["app_name"]
@@ -196,8 +196,6 @@ func Setup(app *fiber.App) {
 		}
 		return c.Render("settings", data)
 	})
-
-
 
 	api := app.Group("/api")
 
@@ -315,21 +313,21 @@ func Setup(app *fiber.App) {
 		if err := c.BodyParser(&rule); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 		}
-		
+
 		rule.ID = fmt.Sprintf("rule_%d", time.Now().UnixNano())
 		rule.CreatedAt = time.Now()
 		rule.UpdatedAt = time.Now()
-		
+
 		if err := db.CreateAlertRule(rule); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		// Reload alert rules cache
 		alerts.ReloadAlertRules()
-		
+
 		// Broadcast rule creation to WebSocket clients
 		ws.BroadcastRuleUpdate(rule)
-		
+
 		return c.JSON(rule)
 	})
 
@@ -339,13 +337,13 @@ func Setup(app *fiber.App) {
 		if err := c.BodyParser(&rule); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 		}
-		
+
 		// Get existing rule to preserve CreatedAt
 		existingRules, err := db.GetAlertRules()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		var existingRule *db.AlertRule
 		for _, r := range existingRules {
 			if r.ID == id {
@@ -353,26 +351,26 @@ func Setup(app *fiber.App) {
 				break
 			}
 		}
-		
+
 		if existingRule == nil {
 			return c.Status(404).JSON(fiber.Map{"error": "Rule not found"})
 		}
-		
+
 		rule.ID = id
 		rule.CreatedAt = existingRule.CreatedAt
 		rule.UpdatedAt = time.Now()
-		
+
 		if err := db.UpdateAlertRule(rule); err != nil {
 			log.Printf("[API] Failed to update alert rule %s: %v", id, err)
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		// Reload alert rules cache
 		alerts.ReloadAlertRules()
-		
+
 		// Broadcast rule update to WebSocket clients
 		ws.BroadcastRuleUpdate(rule)
-		
+
 		return c.JSON(rule)
 	})
 
@@ -381,10 +379,10 @@ func Setup(app *fiber.App) {
 		if err := db.DeleteAlertRule(id); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		// Reload alert rules cache
 		alerts.ReloadAlertRules()
-		
+
 		return c.JSON(fiber.Map{"status": "deleted"})
 	})
 
@@ -396,13 +394,13 @@ func Setup(app *fiber.App) {
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request body"})
 		}
-		
+
 		// Get current rule
 		rules, err := db.GetAlertRules()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		var rule *db.AlertRule
 		for _, r := range rules {
 			if r.ID == id {
@@ -410,21 +408,21 @@ func Setup(app *fiber.App) {
 				break
 			}
 		}
-		
+
 		if rule == nil {
 			return c.Status(404).JSON(fiber.Map{"error": "Rule not found"})
 		}
-		
+
 		rule.Enabled = req.Enabled
 		rule.UpdatedAt = time.Now()
-		
+
 		if err := db.UpdateAlertRule(*rule); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		// Reload alert rules cache
 		alerts.ReloadAlertRules()
-		
+
 		return c.JSON(fiber.Map{"status": "updated"})
 	})
 
@@ -433,14 +431,14 @@ func Setup(app *fiber.App) {
 		if err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid alert ID"})
 		}
-		
+
 		if err := db.ResolveAlert(id); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		// Broadcast alert resolution to WebSocket clients
 		ws.BroadcastAlertResolved(id)
-		
+
 		return c.JSON(fiber.Map{"status": "resolved"})
 	})
 
@@ -454,17 +452,17 @@ func Setup(app *fiber.App) {
 		if err := c.BodyParser(&req); err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid request"})
 		}
-		
+
 		username := c.Locals("username").(string)
 		if !auth.Login(username, req.CurrentPassword) {
 			return c.Status(400).JSON(fiber.Map{"error": "Invalid current password"})
 		}
-		
+
 		logger.LogEvent("PASSWORD_CHANGE", username, "User changed password")
 		if err := auth.UpdatePassword(username, req.NewPassword); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to update password"})
 		}
-		
+
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
@@ -472,9 +470,9 @@ func Setup(app *fiber.App) {
 		appName := c.FormValue("app_name")
 		copyrightText := c.FormValue("copyright_text")
 		logoType := c.FormValue("logo_type")
-		
+
 		logger.LogEvent("SETTINGS_UPDATE", c.Locals("username").(string), fmt.Sprintf("App: %s, Logo: %s", appName, logoType))
-		
+
 		// Handle logo upload
 		if logoFile, err := c.FormFile("logo"); err == nil {
 			logoPath := "./public/images/logo." + strings.Split(logoFile.Filename, ".")[1]
@@ -483,7 +481,7 @@ func Setup(app *fiber.App) {
 			}
 			logger.LogEvent("LOGO_UPLOAD", c.Locals("username").(string), logoFile.Filename)
 		}
-		
+
 		// Handle favicon upload
 		if faviconFile, err := c.FormFile("favicon"); err == nil {
 			faviconPath := "./public/images/favicon." + strings.Split(faviconFile.Filename, ".")[1]
@@ -492,12 +490,12 @@ func Setup(app *fiber.App) {
 			}
 			logger.LogEvent("FAVICON_UPLOAD", c.Locals("username").(string), faviconFile.Filename)
 		}
-		
+
 		// Save settings to database
 		if err := db.SaveAppSettings(appName, copyrightText, logoType); err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": "Failed to save settings"})
 		}
-		
+
 		return c.JSON(fiber.Map{"status": "success"})
 	})
 
@@ -505,22 +503,20 @@ func Setup(app *fiber.App) {
 		settings, err := db.GetAppSettings()
 		if err != nil {
 			return c.JSON(fiber.Map{
-				"app_name": "Local Monitor",
-				"copyright_text": "© 2024 Logger EMP",
-				"logo_type": "text",
+				"app_name":       "Logmojo Monitor",
+				"copyright_text": "© 2024 Logmojo",
+				"logo_type":      "text",
 			})
 		}
 		return c.JSON(settings)
 	})
-
-
 
 	api.Get("/system/info", func(c *fiber.Ctx) error {
 		m, err := metrics.GetHostMetrics()
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
-		
+
 		return c.JSON(fiber.Map{
 			"os":        "macOS",
 			"platform":  "darwin",
@@ -579,7 +575,7 @@ func Setup(app *fiber.App) {
 	api.Get("/services/:service/logs", func(c *fiber.Ctx) error {
 		serviceName := c.Params("service")
 		lines := c.QueryInt("lines", 50)
-		
+
 		logs, err := services.GetServiceLogs(serviceName, lines)
 		if err != nil {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})

@@ -1,6 +1,6 @@
-# Logger EMP (Local Monitor)
+# Logmojo (Log Monitor)
 
-A high-performance, centralized log management and server monitoring agent. Designed for speed and simplicity, it provides instant log searching (using `grep`/`zgrep` under the hood), system metrics, and basic service management without heavy database ingestion for logs.
+A high-performance, centralized log management and server monitoring agent. Designed for speed and simplicity, it provides instant log searching (using `grep`/`zgrep` under the hood), system metrics, and advance service management without heavy database ingestion for logs.
 
 ## 🚀 Key Features
 
@@ -95,8 +95,7 @@ The application is a single binary Go agent acting as a web server and monitorin
 
 ```text
 .
-├── cmd/
-│   └── monitor-agent/    # Main entry point (main.go)
+├── main.go   # Main entry point (main.go)
 ├── internal/
 │   ├── api/              # HTTP Routes & Handlers
 │   ├── config/           # Config loading (Viper)
@@ -115,7 +114,7 @@ The application is a single binary Go agent acting as a web server and monitorin
 
 ## ⚙️ Configuration
 
-Logger EMP supports multiple configuration methods:
+Logmojo supports multiple configuration methods:
 
 ### Environment Variables (.env)
 
@@ -285,7 +284,7 @@ air
 Or standard Go run:
 
 ```bash
-go run ./cmd/monitor-agent/main.go
+go run ./cmd/logmojo/main.go
 # Server listens on :7005
 # Default Auth: admin / admin (created on first run)
 ```
@@ -427,29 +426,24 @@ The search does **not** read files into memory completely for maximum performanc
 ✅ **Bcrypt Password Hashing** - Industry-standard encryption  
 ✅ **Auto-Logout on Expiry** - Frontend redirects on invalid token  
 
-### User Management CLI
-
-**Build CLI Tool:**
-```bash
-go build -o user-cli ./cmd/user-cli/main.go
-```
+### User Management Commands
 
 **Commands:**
 ```bash
 # List all users
-./user-cli --action=list
+./logmojo --user=list
 
 # Create new user
-./user-cli --action=create --user=john --pass=SecurePass123
+./logmojo --user=create --username=john --password=SecurePass123
 
 # Update password
-./user-cli --action=update --user=john --pass=NewSecurePass456
+./logmojo --user=update --username=john --password=NewSecurePass456
 
 # Delete user
-./user-cli --action=delete --user=john
+./logmojo --user=delete --username=john
 
 # Custom database path
-./user-cli --db=/path/to/monitor.db --action=list
+./logmojo --user=list --db=/path/to/monitor.db
 ```
 
 ### Production Security Setup
@@ -467,13 +461,13 @@ MONITOR_JWT_SECRET="generated-secret-from-step-1"
 
 **3. Change Default Admin Password:**
 ```bash
-./user-cli --action=update --user=admin --pass=YourStrongPassword123!
+./logmojo --user=update --username=admin --password=YourStrongPassword123!
 ```
 
 **4. Create Additional Users:**
 ```bash
-./user-cli --action=create --user=operator --pass=SecurePass123
-./user-cli --action=create --user=viewer --pass=ViewerPass456
+./logmojo --user=create --username=operator --password=SecurePass123
+./logmojo --user=create --username=viewer --password=ViewerPass456
 ```
 
 ### Security Best Practices

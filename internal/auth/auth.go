@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"local-monitor/internal/db"
+	"logmojo/internal/db"
 	"os"
 	"strings"
 	"time"

@@ -4,9 +4,8 @@ monitor.db
 /storage
 .DS_Store
 .vscode
-monitor-agent
-user-cli
 public/images/*
 !public/images/.gitkeep
 logs/*
 !logs/.gitkeep
+logmojo

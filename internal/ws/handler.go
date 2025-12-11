@@ -3,11 +3,11 @@ package ws
 import (
 	"context"
 	"encoding/json"
-	"local-monitor/internal/config"
-	"local-monitor/internal/logs"
-	"local-monitor/internal/metrics"
-	"local-monitor/internal/processes"
 	"log"
+	"logmojo/internal/config"
+	"logmojo/internal/logs"
+	"logmojo/internal/metrics"
+	"logmojo/internal/processes"
 	"time"
 
 	"github.com/gofiber/contrib/websocket"

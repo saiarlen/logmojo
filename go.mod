@@ -1,4 +1,4 @@
-module local-monitor
+module logmojo
 
 go 1.24.0
 

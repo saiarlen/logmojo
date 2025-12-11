@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"local-monitor/internal/metrics"
+	"logmojo/internal/metrics"
 
 	"github.com/gofiber/contrib/websocket"
 )

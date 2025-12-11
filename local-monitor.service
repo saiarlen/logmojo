@@ -1,12 +1,12 @@
 [Unit]
-Description=Local Monitor Agent
+Description=Logmojo Monitor Agent
 After=network.target
 
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/local/bin/monitor-agent
-WorkingDirectory=/usr/local/share/local-monitor
+ExecStart=/usr/local/logmojo
+WorkingDirectory=/usr/local/share/logmojo
 Restart=always
 RestartSec=5
 Environment=MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:7005

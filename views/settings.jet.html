@@ -124,8 +124,8 @@ async function loadAppSettings() {
         const response = await fetch('/api/settings/app');
         const settings = await response.json();
         
-        document.getElementById('app-name').value = settings.app_name || 'Local Monitor';
-        document.getElementById('copyright-text-input').value = settings.copyright_text || '© 2024 Logger EMP';
+        document.getElementById('app-name').value = settings.app_name || 'Logmojo Monitor';
+        document.getElementById('copyright-text-input').value = settings.copyright_text || '© 2024 Logmojo';
         
         const logoTypeRadio = document.querySelector(`input[name="logo-type"][value="${settings.logo_type || 'text'}"]`);
         if (logoTypeRadio) logoTypeRadio.checked = true;
@@ -168,7 +168,7 @@ loadAppSettings();
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium mb-2">Application Name</label>
-                    <input id="app-name" type="text" value="Local Monitor" class="input input-bordered w-full" />
+                    <input id="app-name" type="text" value="Logmojo Monitor" class="input input-bordered w-full" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-2">Logo Type</label>
@@ -195,7 +195,7 @@ loadAppSettings();
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-2">Copyright Text</label>
-                    <input id="copyright-text-input" type="text" value="© 2024 Logger EMP" class="input input-bordered w-full" />
+                    <input id="copyright-text-input" type="text" value="© 2024 Logmojo" class="input input-bordered w-full" />
                 </div>
                 <button onclick="updateAppSettings()" class="btn btn-primary w-full">Save Branding</button>
             </div>
@@ -272,7 +272,7 @@ loadAppSettings();
                 </div>
                 <div class="pt-4 border-t border-base-content/10">
                     <p class="text-base-content/60 text-xs leading-relaxed">
-                        Logger EMP is a high-performance log management and server monitoring solution designed for speed and simplicity.
+                        Logmojo is a high-performance log management and server monitoring solution designed for speed and simplicity.
                     </p>
                 </div>
             </div>

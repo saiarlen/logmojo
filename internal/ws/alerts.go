@@ -2,18 +2,18 @@ package ws
 
 import (
 	"encoding/json"
-	"local-monitor/internal/db"
 	"log"
+	"logmojo/internal/db"
 	"time"
 
 	"github.com/gofiber/contrib/websocket"
 )
 
 type AlertUpdate struct {
-	Type    string      `json:"type"`    // "new_alert", "rule_updated", "alert_resolved"
-	Alert   *db.Alert   `json:"alert,omitempty"`
+	Type    string        `json:"type"` // "new_alert", "rule_updated", "alert_resolved"
+	Alert   *db.Alert     `json:"alert,omitempty"`
 	Rule    *db.AlertRule `json:"rule,omitempty"`
-	Message string      `json:"message"`
+	Message string        `json:"message"`
 }
 
 var alertClients = make(map[*websocket.Conn]bool)

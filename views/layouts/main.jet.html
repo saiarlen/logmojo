@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}</title>
+    <title>{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}</title>
     <link rel="icon" type="image/x-icon" href="/public/images/favicon.png">
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.6.0/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -81,7 +81,7 @@
             <!-- Footer - Sticks to bottom -->
             <footer class="border-t border-base-content/10 py-4 mt-auto bg-base-200/50 backdrop-blur-sm">
                 <div class="text-center text-xs opacity-60">
-                    <span class="font-semibold">{{ if app_name }}{{ app_name }}{{ else }}Logger EMP{{ end }}</span> <span class="opacity-40" id="footer-version">{{ version }}</span> • <span id="copyright-text">{{ if copyright_text }}{{ copyright_text }}{{ else }}© 2024 Logger EMP{{ end }}</span>
+                    <span class="font-semibold">{{ if app_name }}{{ app_name }}{{ else }}Logmojo{{ end }}</span> <span class="opacity-40" id="footer-version">{{ version }}</span> • <span id="copyright-text">{{ if copyright_text }}{{ copyright_text }}{{ else }}© 2024 Logmojo{{ end }}</span>
                 </div>
             </footer>
         </div> 
@@ -91,10 +91,10 @@
                 <div class="p-6 pb-2 flex items-center justify-between">
                     <div>
                         {{ if logo_type == "image" }}
-                            <img src="/public/images/logo.png" alt="{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}" class="h-8 px-2" id="app-logo" onerror="this.style.display='none'; document.getElementById('app-title').style.display='block'" />
-                            <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2 hidden" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}</div>
+                            <img src="/public/images/logo.png" alt="{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}" class="h-8 px-2" id="app-logo" onerror="this.style.display='none'; document.getElementById('app-title').style.display='block'" />
+                            <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2 hidden" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}</div>
                         {{ else }}
-                            <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Local Monitor{{ end }}</div>
+                            <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}</div>
                         {{ end }}
                         <div class="brand-text text-xs font-medium opacity-50 px-2 mt-1">System Dashboard</div>
                     </div>

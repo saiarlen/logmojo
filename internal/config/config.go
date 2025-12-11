@@ -9,14 +9,14 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig     `mapstructure:"server"`
-	Database  DatabaseConfig   `mapstructure:"database"`
-	Security  SecurityConfig   `mapstructure:"security"`
-	Services  []ServiceConfig  `mapstructure:"services"`
-	Apps      []AppConfig      `mapstructure:"apps"`
-	Alerts    AlertsConfig     `mapstructure:"alerts"`
-	Notifiers NotifiersConfig  `mapstructure:"notifiers"`
-	DevMode   bool             `mapstructure:"dev_mode"`
+	Server    ServerConfig    `mapstructure:"server"`
+	Database  DatabaseConfig  `mapstructure:"database"`
+	Security  SecurityConfig  `mapstructure:"security"`
+	Services  []ServiceConfig `mapstructure:"services"`
+	Apps      []AppConfig     `mapstructure:"apps"`
+	Alerts    AlertsConfig    `mapstructure:"alerts"`
+	Notifiers NotifiersConfig `mapstructure:"notifiers"`
+	DevMode   bool            `mapstructure:"dev_mode"`
 }
 
 type ServerConfig struct {
@@ -95,7 +95,7 @@ func Load() error {
 	// Set up Viper
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("/etc/local-monitor/")
+	viper.AddConfigPath("/etc/logmojo/")
 	viper.AddConfigPath(".")
 
 	// Environment variable configuration

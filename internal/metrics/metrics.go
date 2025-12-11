@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"local-monitor/internal/db"
+	"logmojo/internal/db"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
