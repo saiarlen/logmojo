@@ -14,6 +14,7 @@ import (
 	"logmojo/internal/db"
 	"logmojo/internal/logger"
 	"logmojo/internal/metrics"
+	"logmojo/internal/version"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/jet/v2"
@@ -26,7 +27,14 @@ func main() {
 	username := flag.String("username", "", "Username for user operations")
 	password := flag.String("password", "", "Password for user operations")
 	dbPath := flag.String("db", "", "Database path (optional)")
+	versionFlag := flag.Bool("version", false, "Show version information")
 	flag.Parse()
+
+	// Handle version command
+	if *versionFlag {
+		showVersion()
+		return
+	}
 
 	// Handle user management commands
 	if *userAction != "" {
@@ -53,28 +61,28 @@ func handleUserCommand(action, username, password, dbPath string) {
 	}
 
 	if err := db.Init(dbPath); err != nil {
-		fmt.Printf("❌ Failed to open database: %v\n", err)
+		fmt.Printf("Failed to open database: %v\n", err)
 		os.Exit(1)
 	}
 
 	switch action {
 	case "create":
 		if username == "" || password == "" {
-			fmt.Println("❌ Usage: --user=create --username=USERNAME --password=PASSWORD")
+			fmt.Println("Usage: --user=create --username=USERNAME --password=PASSWORD")
 			os.Exit(1)
 		}
 		createUser(username, password)
 
 	case "delete":
 		if username == "" {
-			fmt.Println("❌ Usage: --user=delete --username=USERNAME")
+			fmt.Println("Usage: --user=delete --username=USERNAME")
 			os.Exit(1)
 		}
 		deleteUser(username)
 
 	case "update":
 		if username == "" || password == "" {
-			fmt.Println("❌ Usage: --user=update --username=USERNAME --password=NEW_PASSWORD")
+			fmt.Println("Usage: --user=update --username=USERNAME --password=NEW_PASSWORD")
 			os.Exit(1)
 		}
 		updatePassword(username, password)
@@ -151,12 +159,12 @@ func startServer() {
 func createUser(username, password string) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Printf("❌ Failed to hash password: %v\n", err)
+		fmt.Printf(" Failed to hash password: %v\n", err)
 		os.Exit(1)
 	}
 
 	if err := db.CreateUser(username, string(hash)); err != nil {
-		fmt.Printf("❌ Failed to create user: %v\n", err)
+		fmt.Printf(" Failed to create user: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -166,7 +174,7 @@ func createUser(username, password string) {
 func deleteUser(username string) {
 	result, err := db.DB.Exec("DELETE FROM users WHERE username = ?", username)
 	if err != nil {
-		fmt.Printf("❌ Failed to delete user: %v\n", err)
+		fmt.Printf(" Failed to delete user: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -182,13 +190,13 @@ func deleteUser(username string) {
 func updatePassword(username, newPassword string) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		fmt.Printf("❌ Failed to hash password: %v\n", err)
+		fmt.Printf(" Failed to hash password: %v\n", err)
 		os.Exit(1)
 	}
 
 	result, err := db.DB.Exec("UPDATE users SET password_hash = ? WHERE username = ?", string(hash), username)
 	if err != nil {
-		fmt.Printf("❌ Failed to update password: %v\n", err)
+		fmt.Printf(" Failed to update password: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -201,10 +209,16 @@ func updatePassword(username, newPassword string) {
 	fmt.Printf("✅ Password updated for user '%s'\n", username)
 }
 
+func showVersion() {
+	fmt.Printf("Logmojo %s\n", version.Version)
+	fmt.Printf("Commit: %s\n", version.Commit)
+	fmt.Printf("Built: %s\n", version.BuildDate)
+}
+
 func listUsers() {
 	rows, err := db.DB.Query("SELECT username FROM users ORDER BY username")
 	if err != nil {
-		fmt.Printf("❌ Failed to list users: %v\n", err)
+		fmt.Printf(" Failed to list users: %v\n", err)
 		os.Exit(1)
 	}
 	defer rows.Close()
