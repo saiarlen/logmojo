@@ -105,11 +105,39 @@
     let prevNetRecv = 0;
     let firstPacket = true;
 
-    // WebSocket Connection
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/api/ws/metrics`);
-
-    ws.onmessage = (event) => {
+    // WebSocket Connection with Reconnection
+    let ws = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${window.location.host}/api/ws/metrics`);
+        
+        ws.onopen = function() {
+            console.log('Dashboard WebSocket connected');
+            reconnectAttempts = 0;
+        };
+        
+        ws.onmessage = handleWebSocketMessage;
+        
+        ws.onclose = function() {
+            console.log('Dashboard WebSocket disconnected');
+            if (reconnectAttempts < maxReconnectAttempts) {
+                reconnectAttempts++;
+                console.log(`Reconnecting... attempt ${reconnectAttempts}`);
+                setTimeout(connectWebSocket, 3000);
+            }
+        };
+        
+        ws.onerror = function(error) {
+            console.error('Dashboard WebSocket error:', error);
+        };
+    }
+    
+    connectWebSocket();
+    
+    function handleWebSocketMessage(event) {
         const m = JSON.parse(event.data);
         const now = new Date().getTime();
 

@@ -10,21 +10,37 @@ import (
 )
 
 func MetricsHandler(c *websocket.Conn) {
-	// Upgrade happens in main.go middleware
 	defer c.Close()
 
 	ticker := time.NewTicker(1 * time.Second)
+	pingTicker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
+	defer pingTicker.Stop()
 
-	for range ticker.C {
-		m, err := metrics.GetHostMetrics()
-		if err != nil {
-			log.Println("Error getting metrics:", err)
-			continue
+	// Handle client messages (including pong)
+	go func() {
+		for {
+			if _, _, err := c.ReadMessage(); err != nil {
+				return
+			}
 		}
-		if err := c.WriteJSON(m); err != nil {
-			// Client disconnected
-			return
+	}()
+
+	for {
+		select {
+		case <-ticker.C:
+			m, err := metrics.GetHostMetrics()
+			if err != nil {
+				log.Println("Error getting metrics:", err)
+				continue
+			}
+			if err := c.WriteJSON(m); err != nil {
+				return
+			}
+		case <-pingTicker.C:
+			if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
 }

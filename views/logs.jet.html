@@ -587,6 +587,9 @@
     }
   }
 
+  let logReconnectAttempts = 0;
+  const maxLogReconnectAttempts = 5;
+  
   function startLiveStream() {
     if (!state.app || !state.logSource) {
       alert("Please select a log source first");
@@ -604,7 +607,8 @@
     state.websocket = new WebSocket(wsUrl);
 
     state.websocket.onopen = () => {
-      console.log("WebSocket connected");
+      console.log("Logs WebSocket connected");
+      logReconnectAttempts = 0;
       state.isLiveStreaming = true;
       updateLiveStreamButton();
       // Clear existing logs for live view
@@ -657,14 +661,22 @@
     };
 
     state.websocket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      alert("WebSocket connection failed. Check console for details.");
-      stopLiveStream();
+      console.error("Logs WebSocket error:", error);
     };
 
     state.websocket.onclose = (event) => {
-      console.log("WebSocket closed:", event.code, event.reason);
-      stopLiveStream();
+      console.log("Logs WebSocket closed:", event.code, event.reason);
+      if (state.isLiveStreaming && logReconnectAttempts < maxLogReconnectAttempts) {
+        logReconnectAttempts++;
+        console.log(`Reconnecting logs stream... attempt ${logReconnectAttempts}`);
+        setTimeout(() => {
+          if (state.isLiveStreaming) {
+            startLiveStream();
+          }
+        }, 3000);
+      } else {
+        stopLiveStream();
+      }
     };
   }
 

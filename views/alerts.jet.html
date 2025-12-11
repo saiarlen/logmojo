@@ -44,26 +44,41 @@
     showHistoryView();
   }
 
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
+  
   function connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/ws/alerts`;
     
     alertSocket = new WebSocket(wsUrl);
     
-    alertSocket.onopen = function() {};
+    alertSocket.onopen = function() {
+      console.log('Alerts WebSocket connected');
+      reconnectAttempts = 0;
+    };
     
     alertSocket.onmessage = function(event) {
       try {
         const update = JSON.parse(event.data);
         handleAlertUpdate(update);
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error parsing alert update:', e);
+      }
     };
     
     alertSocket.onclose = function() {
-      setTimeout(connectWebSocket, 5000);
+      console.log('Alerts WebSocket disconnected');
+      if (reconnectAttempts < maxReconnectAttempts) {
+        reconnectAttempts++;
+        console.log(`Reconnecting alerts... attempt ${reconnectAttempts}`);
+        setTimeout(connectWebSocket, 3000);
+      }
     };
     
-    alertSocket.onerror = function(error) {};
+    alertSocket.onerror = function(error) {
+      console.error('Alerts WebSocket error:', error);
+    };
   }
 
   function handleAlertUpdate(update) {

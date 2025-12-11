@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"local-monitor/internal/db"
 	"log"
+	"time"
 
 	"github.com/gofiber/contrib/websocket"
 )
@@ -30,12 +31,24 @@ func AlertsHandler(c *websocket.Conn) {
 	// Send initial data
 	sendInitialAlertData(c)
 
-	// Keep connection alive and handle messages
+	// Heartbeat ticker
+	pingTicker := time.NewTicker(30 * time.Second)
+	defer pingTicker.Stop()
+
+	// Handle messages and heartbeat
 	for {
-		_, _, err := c.ReadMessage()
-		if err != nil {
-			log.Printf("[WS] Alert client disconnected: %v", err)
-			break
+		select {
+		case <-pingTicker.C:
+			if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Printf("[WS] Alert client ping failed: %v", err)
+				return
+			}
+		default:
+			_, _, err := c.ReadMessage()
+			if err != nil {
+				log.Printf("[WS] Alert client disconnected: %v", err)
+				return
+			}
 		}
 	}
 }

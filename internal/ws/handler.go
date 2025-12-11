@@ -91,7 +91,9 @@ type ProcessData struct {
 
 func ProcessesHandler(c *websocket.Conn) {
 	ticker := time.NewTicker(2 * time.Second)
+	pingTicker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
+	defer pingTicker.Stop()
 
 	// Handle client disconnect
 	go func() {
@@ -133,6 +135,10 @@ func ProcessesHandler(c *websocket.Conn) {
 			}
 
 			if err := c.WriteMessage(websocket.TextMessage, jsonData); err != nil {
+				return
+			}
+		case <-pingTicker.C:
+			if err := c.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
 			}
 		}
