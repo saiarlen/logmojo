@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Documentation - Logmojo</title>
+    <link rel="icon" type="image/png" href="assets/images/favicon.png" />
+    <link rel="shortcut icon" type="image/png" href="assets/images/favicon.png" />
+    <link rel="apple-touch-icon" href="assets/images/favicon.png" />
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="Complete documentation for Logmojo - High-performance log management system. Installation guide, API reference, configuration, and troubleshooting." />
+    <meta property="og:title" content="Logmojo Documentation" />
+    <meta property="og:description" content="Complete documentation for Logmojo - High-performance log management system. Installation guide, API reference, configuration, and troubleshooting." />
+    <meta property="og:image" content="https://saiarlen.github.io/logmojo/assets/images/logo.png" />
+    <meta property="og:url" content="https://saiarlen.github.io/logmojo/docs.html" />
+    <meta property="og:type" content="website" />
+    
+    <link rel="canonical" href="https://saiarlen.github.io/logmojo/docs.html" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      .docs-page {
+        padding-top: 80px;
+        background: var(--bg-primary);
+      }
+      
+      .docs-layout {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        gap: var(--spacing-xl);
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--spacing-xl);
+      }
+      
+      .docs-sidebar {
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+      }
+      
+      .docs-nav {
+        list-style: none;
+      }
+      
+      .docs-nav li {
+        margin-bottom: var(--spacing-xs);
+      }
+      
+      .docs-nav a {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        color: var(--text-secondary);
+        text-decoration: none;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-md);
+        transition: var(--transition);
+      }
+      
+      .docs-nav a:hover,
+      .docs-nav a.active {
+        color: var(--primary-light);
+        background: rgba(99, 102, 241, 0.1);
+      }
+      
+      .docs-content {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-xl);
+        backdrop-filter: blur(12px);
+      }
+      
+      .docs-content h1 {
+        font-size: 2.5rem;
+        margin-bottom: var(--spacing-md);
+        color: var(--text-primary);
+      }
+      
+      .docs-content h2 {
+        font-size: 2rem;
+        margin: var(--spacing-xl) 0 var(--spacing-md);
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: var(--spacing-sm);
+      }
+      
+      .docs-content h3 {
+        font-size: 1.5rem;
+        margin: var(--spacing-lg) 0 var(--spacing-sm);
+        color: var(--primary-light);
+      }
+      
+      .docs-content h4 {
+        font-size: 1.25rem;
+        margin: var(--spacing-md) 0 var(--spacing-sm);
+        color: var(--text-primary);
+      }
+      
+      .docs-content p {
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-md);
+        line-height: 1.7;
+      }
+      
+      .docs-content ul,
+      .docs-content ol {
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-md);
+        padding-left: var(--spacing-lg);
+      }
+      
+      .docs-content li {
+        margin-bottom: var(--spacing-xs);
+      }
+      
+      .lead {
+        font-size: 1.25rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-xl);
+      }
+      
+      .info-box {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        background: rgba(99, 102, 241, 0.1);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin: var(--spacing-md) 0;
+      }
+      
+      .warning-box {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--spacing-sm);
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        border-radius: var(--radius-md);
+        padding: var(--spacing-md);
+        margin: var(--spacing-md) 0;
+        color: var(--error);
+      }
+      
+      .api-endpoint {
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--spacing-lg);
+        margin: var(--spacing-lg) 0;
+      }
+      
+      .api-endpoint > div:first-child {
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-sm);
+      }
+      
+      .method {
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+      }
+      
+      .method.get {
+        background: var(--success);
+        color: white;
+      }
+      
+      .method.post {
+        background: var(--primary);
+        color: white;
+      }
+      
+      .method.put {
+        background: var(--warning);
+        color: white;
+      }
+      
+      .method.delete {
+        background: var(--error);
+        color: white;
+      }
+      
+      .path {
+        font-family: "Monaco", "Courier New", monospace;
+        color: var(--primary-light);
+        font-weight: 600;
+      }
+      
+      .description {
+        color: var(--text-secondary);
+        margin-bottom: var(--spacing-md);
+      }
+      
+      .api-params table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: var(--spacing-md) 0;
+      }
+      
+      .api-params th,
+      .api-params td {
+        padding: var(--spacing-sm);
+        text-align: left;
+        border-bottom: 1px solid var(--border-color);
+      }
+      
+      .api-params th {
+        background: var(--bg-tertiary);
+        font-weight: 600;
+      }
+      
+      .api-params code {
+        background: var(--bg-secondary);
+        padding: 0.25rem 0.5rem;
+        border-radius: var(--radius-sm);
+        font-family: "Monaco", "Courier New", monospace;
+        color: var(--primary-light);
+      }
+      
+      @media (max-width: 768px) {
+        .docs-layout {
+          grid-template-columns: 1fr;
+          padding: var(--spacing-md);
+        }
+        
+        .docs-sidebar {
+          position: static;
+          order: 2;
+        }
+        
+        .docs-content {
+          order: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-content">
+          <div class="logo">
+            <img src="assets/images/logo.png" alt="Logmojo Logo" />
+            <span>Logmojo</span>
+          </div>
+          <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="docs.html" class="active">Documentation</a></li>
+            <li>
+              <a
+                href="https://github.com/saiarlen/logmojo"
+                target="_blank"
+                class="btn-github"
+              >
+                <i class="fab fa-github"></i> GitHub
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <section class="docs-page">
+      <div class="docs-layout">
+        <aside class="docs-sidebar">
+          <h3>Documentation</h3>
+          <ul class="docs-nav">
+            <li><a href="#getting-started" class="active"><i class="fas fa-play-circle"></i> Getting Started</a></li>
+            <!-- <li><a href="#system-requirements"><i class="fas fa-server"></i> System Requirements</a></li> -->
+            <li><a href="#updates"><i class="fas fa-sync-alt"></i> Updates</a></li>
+            <li><a href="#features"><i class="fas fa-star"></i> Features</a></li>
+            <li><a href="#configuration"><i class="fas fa-cog"></i> Configuration</a></li>
+            <li><a href="#api"><i class="fas fa-code"></i> API Reference</a></li>
+            <li><a href="#troubleshooting"><i class="fas fa-wrench"></i> Troubleshooting</a></li>
+          </ul>
+        </aside>
+
+        <main class="docs-content">
+          <h1>Logmojo Documentation</h1>
+          <p class="lead">
+            Complete guide to installing, configuring, and using Logmojo for high-performance log management.
+          </p>
+
+          <h2 id="getting-started">Getting Started</h2>
+          
+          <h3>System Requirements</h3>
+          
+          <h4>Minimum Requirements</h4>
+          <ul>
+            <li><strong>OS:</strong> Linux, macOS, Windows (x86_64 or ARM64)</li>
+            <li><strong>RAM:</strong> 512MB</li>
+            <li><strong>Disk:</strong> 100MB free space</li>
+            <li><strong>Dependencies:</strong> <code>grep</code>, <code>zgrep</code> (for log search)</li>
+          </ul>
+          
+          <h4>Recommended</h4>
+          <ul>
+            <li><strong>RAM:</strong> 1GB+</li>
+            <li><strong>Disk:</strong> 1GB+ (for log storage)</li>
+            <li><strong>Network:</strong> 1Gbps+ for high log volume</li>
+          </ul>
+          
+          <h3>Development Prerequisites</h3>
+          <p>For development setup, you need:</p>
+          <ul>
+            <li><strong>Go:</strong> 1.24+ installed</li>
+            <li><strong>Git:</strong> For cloning the repository</li>
+            <li><strong>Air:</strong> For live reload (optional but recommended)</li>
+          </ul>
+          
+          <h3>Installation</h3>
+          
+          <h4>Option 1: Automated Installation (Linux/macOS)</h4>
+          <div class="code-block">
+            <pre><code>curl -fsSL https://raw.githubusercontent.com/saiarlen/logmojo/main/scripts/deploy.sh | sudo bash</code></pre>
+            <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/saiarlen/logmojo/main/scripts/deploy.sh | sudo bash">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+          
+          <p>This automated script will:</p>
+          <ul>
+            <li>Auto-detect your OS and architecture</li>
+            <li>Download the latest binary and assets</li>
+            <li>Create a systemd service</li>
+            <li>Configure firewall rules</li>
+            <li>Start the service automatically</li>
+          </ul>
+
+          <h4>Option 2: Manual Installation (All Platforms)</h4>
+          
+          <p><strong>Step 1: Download Binary</strong></p>
+          <div class="code-block">
+            <pre><code># Linux x86_64
+wget https://github.com/saiarlen/logmojo/releases/latest/download/logmojo-linux-amd64
+
+# Linux ARM
+wget https://github.com/saiarlen/logmojo/releases/latest/download/logmojo-darwin-arm64
+
+# macOS ARM64 (M1/M2)
+wget https://github.com/saiarlen/logmojo/releases/latest/download/logmojo-darwin-arm64
+
+# macOS x86_64 (Intel)
+wget https://github.com/saiarlen/logmojo/releases/latest/download/logmojo-darwin-amd64</code></pre>
+          </div>
+
+          <p><strong>Step 2: Download Required Files</strong></p>
+          <div class="code-block">
+            <pre><code># Clone repository for assets
+git clone https://github.com/saiarlen/logmojo.git
+cd logmojo
+
+# Move binary into folder
+mv ../logmojo-* ../logmojo
+
+# Copy environment file and setup
+cp .env.example .env</code></pre>
+          </div>
+
+          <p><strong>Step 3: Make Executable and Run</strong></p>
+          <div class="code-block">
+            <pre><code># Make executable
+chmod +x logmojo-linux-amd64
+
+# Run
+./logmojo-linux-amd64</code></pre>
+          </div>
+
+          <p><strong>Step 4: Use systemd or supervisor to the app in background</strong></p>
+            <div class="code-block">
+              <pre># Use Logmojo.service file for systemd reference</pre> 
+          </div>
+
+          <h4>Option 3: Windows x64 Installation</h4>
+          
+          <p><strong>Step 1: Download Windows Binary</strong></p>
+          <p>Download the latest Windows binary from <a href="https://github.com/saiarlen/logmojo/releases/latest" target="_blank">GitHub Releases</a>:</p>
+          <ul>
+            <li><code>logmojo-windows-amd64.exe</code> (64-bit)</li>
+          </ul>
+
+          <p><strong>Step 2: Download Assets</strong></p>
+          <p>Download the source code ZIP from the same release page and extract:</p>
+          <ul>
+            <li><code>views/</code> folder (HTML templates)</li>
+            <li><code>public/</code> folder (CSS/JS assets)</li>
+            <li><code>.env.example</code> file</li>
+             <li><code>config.yaml</code> file</li>
+          </ul>
+
+          <p><strong>Step 3: Setup Configuration</strong></p>
+          <div class="code-block">
+            <pre><code># Copy environment file
+copy .env.example .env
+
+# Edit .env file with your settings</code></pre>
+          </div>
+
+          <p><strong>Step 4: Run Logmojo</strong></p>
+          <div class="code-block">
+            <pre><code># Run directly
+logmojo-windows-amd64.exe
+
+# Or create a Windows service using NSSM
+nssm install logmojo "C:\path\to\logmojo-windows-amd64.exe"
+nssm start logmojo</code></pre>
+          </div>
+
+          <p><strong>Windows Firewall Setup</strong></p>
+          <div class="code-block">
+            <pre><code>netsh advfirewall firewall add rule name="Logmojo" dir=in action=allow protocol=TCP localport=7005</code></pre>
+          </div>
+
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <div>
+              <strong>Windows Users:</strong> For production use, consider using <a href="https://nssm.cc/" target="_blank">NSSM</a> to run Logmojo as a Windows service.
+            </div>
+          </div>
+
+          <h4>Option 4: Development Setup</h4>
+          <p><strong>Prerequisites:</strong> Go 1.24+, Git</p>
+          <div class="code-block">
+            <pre><code># 1. Clone repository
+git clone https://github.com/saiarlen/logmojo.git
+cd logmojo
+
+# 2. Install dependencies
+go mod download
+
+# 3. Setup environment
+cp .env.example .env
+
+# 4. Run with live reload (recommended)
+go install github.com/cosmtrek/air@latest
+air
+
+# Or run normally
+go run main.go</code></pre>
+            <button class="copy-btn" data-copy="git clone https://github.com/saiarlen/logmojo.git
+cd logmojo
+cp .env.example .env
+go mod download
+air">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+          
+          <p><strong>Development workflow:</strong></p>
+          <div class="code-block">
+            <pre><code># Pull latest changes
+git pull origin main
+
+# Update dependencies
+go mod tidy
+
+# Run tests
+go test ./...
+
+# Build binary
+go build -o logmojo .</code></pre>
+          </div>
+
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <div>
+              To create and test demo alerts follow <em>test-alerts.md</em> file in tests folder 
+            </div>
+          </div>
+          <h3>First Login</h3>
+          <ol>
+            <li>Access the web interface at <code>http://localhost:7005</code></li>
+            <li>Login with default credentials: <code>admin</code> / <code>admin</code></li>
+            <li><strong>⚠️ Change password immediately</strong> via Settings page</li>
+          </ol>
+
+          <div class="warning-box">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+              <strong>Security Warning:</strong> Always change the default password after first login!
+            </div>
+          </div>
+
+          <h3>Configure Log Sources</h3>
+          <p>Edit <code>config.yaml</code> to add your applications:</p>
+          <div class="code-block">
+            <pre><code>apps:
+  - name: "My Application"
+    service_name: "my-app"
+    logs:
+      - name: "Application Log"
+        path: "/var/log/myapp/app.log"
+      - name: "Error Log"
+        path: "/var/log/myapp/error.log"</code></pre>
+          </div>
+
+          <p>Restart the service to apply changes:</p>
+          <div class="code-block">
+            <pre><code>sudo systemctl restart logmojo</code></pre>
+            <button class="copy-btn" data-copy="sudo systemctl restart logmojo">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+
+          <h2 id="updates">Updates</h2>
+          
+          <h4>Zero-Downtime Update (Linux/macOS)</h4>
+          <p>Automated update script that preserves your data and configuration:</p>
+          <div class="code-block">
+            <pre><code>curl -fsSL https://raw.githubusercontent.com/saiarlen/logmojo/main/scripts/update.sh | sudo bash</code></pre>
+            <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/saiarlen/logmojo/main/scripts/update.sh | sudo bash">
+              <i class="fas fa-copy"></i>
+            </button>
+          </div>
+          
+          <p>This update script will:</p>
+          <ul>
+            <li>Download the latest binary</li>
+            <li>Preserve your existing configuration and data</li>
+            <li>Restart the service with zero downtime</li>
+            <li>Maintain all user accounts and settings</li>
+          </ul>
+
+          <h4>Manual Update (Windows/Linux/macOS)</h4>
+          
+          <p><strong>For Linux/macOS:</strong></p>
+          <ol>
+            <li><strong>Backup Current Installation:</strong>
+              <div class="code-block">
+                <pre><code># Backup your current .env and config files
+cp .env .env.backup
+cp config.yaml config.yaml.backup
+
+# Backup database (optional)
+cp monitor.db monitor.db.backup</code></pre>
+              </div>
+            </li>
+            <li><strong>Download Latest Release:</strong> Get the latest binary and source code from <a href="https://github.com/saiarlen/logmojo/releases/latest" target="_blank">GitHub Releases</a></li>
+            <li><strong>Stop Logmojo Service:</strong>
+              <div class="code-block">
+                <pre><code># Stop systemd service
+sudo systemctl stop logmojo
+
+# Or stop the process manually
+pkill logmojo</code></pre>
+              </div>
+            </li>
+            <li><strong>Update Files:</strong>
+              <ul>
+                <li>Replace binary with new version (e.g., <code>logmojo-linux-amd64</code>)</li>
+                <li>Update <code>views/</code> folder with new templates</li>
+                <li>Update <code>public/</code> folder with new CSS/JS assets</li>
+                <li>Keep your existing <code>.env</code> and <code>config.yaml</code> files</li>
+              </ul>
+            </li>
+            <li><strong>Set Permissions:</strong>
+              <div class="code-block">
+                <pre><code>chmod +x logmojo-linux-amd64</code></pre>
+              </div>
+            </li>
+            <li><strong>Database Migration:</strong> The application will automatically update the database schema on startup if needed</li>
+            <li><strong>Restart Service:</strong>
+              <div class="code-block">
+                <pre><code># Start systemd service
+sudo systemctl start logmojo
+
+# Or run directly
+./logmojo-linux-amd64</code></pre>
+              </div>
+            </li>
+          </ol>
+          
+          <p><strong>For Windows:</strong></p>
+          <ol>
+            <li><strong>Backup Current Installation:</strong>
+              <div class="code-block">
+                <pre><code># Backup your current .env and config files
+copy .env .env.backup
+copy config.yaml config.yaml.backup
+
+# Backup database (optional)
+copy monitor.db monitor.db.backup</code></pre>
+              </div>
+            </li>
+            <li><strong>Download Latest Release:</strong> Get the latest binary and source code ZIP from <a href="https://github.com/saiarlen/logmojo/releases/latest" target="_blank">GitHub Releases</a></li>
+            <li><strong>Stop Logmojo Service:</strong>
+              <div class="code-block">
+                <pre><code># If using NSSM
+nssm stop logmojo
+
+# Or stop the process manually</code></pre>
+              </div>
+            </li>
+            <li><strong>Update Files:</strong>
+              <ul>
+                <li>Replace <code>logmojo-windows-amd64.exe</code> with the new binary</li>
+                <li>Update <code>views/</code> folder with new templates</li>
+                <li>Update <code>public/</code> folder with new CSS/JS assets</li>
+                <li>Keep your existing <code>.env</code> and <code>config.yaml</code> files</li>
+              </ul>
+            </li>
+            <li><strong>Database Migration:</strong> The application will automatically update the database schema on startup if needed</li>
+            <li><strong>Restart Service:</strong>
+              <div class="code-block">
+                <pre><code># If using NSSM
+nssm start logmojo
+
+# Or run directly
+logmojo-windows-amd64.exe</code></pre>
+              </div>
+            </li>
+          </ol>
+          
+          <div class="warning-box">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+              <strong>Important:</strong> Always backup your <code>.env</code>, <code>config.yaml</code>, and <code>monitor.db</code> files before updating!
+            </div>
+          </div>
+          
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <div>
+              <strong>Safe Updates:</strong> Your configuration files, database, and user data are preserved during updates.
+            </div>
+          </div>
+
+          <h2 id="features">Features</h2>
+
+          <h3>Log Management</h3>
+          <ul>
+            <li><strong>Direct File Search:</strong> Uses grep/zgrep for instant searching without database ingestion</li>
+            <li><strong>Multi-format Support:</strong> Handles compressed files (.gz, .bz2, .xz, .lz4) automatically</li>
+            <li><strong>Smart Timestamp Parsing:</strong> Supports multiple log formats (ISO 8601, syslog, Unix timestamps)</li>
+            <li><strong>Real-time Streaming:</strong> Live log tailing with WebSocket connections</li>
+          </ul>
+
+          <h3>System Monitoring</h3>
+          <ul>
+            <li><strong>Real-time Metrics:</strong> CPU, RAM, Disk, and Network usage</li>
+            <li><strong>Historical Data:</strong> SQLite storage for 24-hour metric history</li>
+            <li><strong>Process Management:</strong> View and manage running processes</li>
+            <li><strong>Service Control:</strong> Complete systemd service management</li>
+          </ul>
+
+          <h3>Alert System</h3>
+          <ul>
+            <li><strong>Multi-type Rules:</strong> System metrics, log patterns, exception detection</li>
+            <li><strong>Smart Duplicate Prevention:</strong> Hash-based tracking prevents spam</li>
+            <li><strong>Email Notifications:</strong> HTML-formatted alerts with severity levels</li>
+            <li><strong>Webhook Support:</strong> Slack, Discord, and custom webhook integration</li>
+          </ul>
+
+          <h2 id="configuration">Configuration</h2>
+
+          <h3>Environment Variables</h3>
+          <p>Key configuration options in <code>.env</code>:</p>
+          <div class="code-block">
+            <pre><code># Server Configuration
+MONITOR_GENERAL_VERSION="dev"
+MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:7005
+MONITOR_DATABASE_PATH=./monitor.db
+
+# Security
+MONITOR_SECURITY_JWT_SECRET=your-secret-key-change-this
+
+
+# Email Notifications
+MONITOR_NOTIFIERS_EMAIL_ENABLED=true
+MONITOR_NOTIFIERS_EMAIL_SMTP_HOST=smtp.gmail.com
+MONITOR_NOTIFIERS_EMAIL_SMTP_PORT=587
+MONITOR_NOTIFIERS_EMAIL_USERNAME=your-email@gmail.com
+MONITOR_NOTIFIERS_EMAIL_PASSWORD=your-app-password
+MONITOR_NOTIFIERS_EMAIL_FROM=alerts@company.com
+MONITOR_NOTIFIERS_EMAIL_TO=admin@company.com
+
+# Webhook Notifications
+MONITOR_NOTIFIERS_WEBHOOK_ENABLED=false
+MONITOR_NOTIFIERS_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK</code></pre>
+          </div>
+
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <div>
+              <strong>Gmail Users:</strong> Use <a href="https://support.google.com/accounts/answer/185833" target="_blank">App Passwords</a>, not your regular password.
+            </div>
+          </div>
+
+          <h3>User Management</h3>
+          <p>Manage users via command line:</p>
+          <div class="code-block">
+            <pre><code># Create user
+./logmojo --user=create --username=john --password=SecurePass123
+
+# List users
+./logmojo --user=list
+
+# Update password
+./logmojo --user=update --username=john --password=NewPass456
+
+# Delete user
+./logmojo --user=delete --username=john</code></pre>
+          </div>
+
+          <h3>Service Management</h3>
+          <div class="code-block">
+            <pre><code># Start service
+sudo systemctl start logmojo
+
+# Stop service
+sudo systemctl stop logmojo
+
+# Restart service
+sudo systemctl restart logmojo
+
+# Check status
+sudo systemctl status logmojo
+
+# View logs
+sudo journalctl -u logmojo -f</code></pre>
+          </div>
+
+          <h2 id="api">API Reference</h2>
+
+          <h3>Authentication</h3>
+          <p>All API endpoints (except login) require JWT authentication via HTTP-only cookies.</p>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method post">POST</span>
+              <span class="path">/login</span>
+            </div>
+            <p class="description">Authenticate and receive JWT token</p>
+            <div class="code-block">
+              <pre><code>POST /login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin"
+}</code></pre>
+            </div>
+          </div>
+
+          <h3>Log Management</h3>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method get">GET</span>
+              <span class="path">/api/logs/search</span>
+            </div>
+            <p class="description">Search log files using grep</p>
+
+            <div class="api-params">
+              <h4>Query Parameters</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Required</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>q</code></td>
+                    <td>string</td>
+                    <td>Yes</td>
+                    <td>Search term or regex pattern</td>
+                  </tr>
+                  <tr>
+                    <td><code>app</code></td>
+                    <td>string</td>
+                    <td>Yes</td>
+                    <td>Application name</td>
+                  </tr>
+                  <tr>
+                    <td><code>log</code></td>
+                    <td>string</td>
+                    <td>Yes</td>
+                    <td>Log file name</td>
+                  </tr>
+                  <tr>
+                    <td><code>level</code></td>
+                    <td>string</td>
+                    <td>No</td>
+                    <td>Filter by log level (INFO, WARN, ERROR)</td>
+                  </tr>
+                  <tr>
+                    <td><code>limit</code></td>
+                    <td>integer</td>
+                    <td>No</td>
+                    <td>Max results (default: 500, max: 2000)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="code-block">
+              <pre><code>GET /api/logs/search?q=error&app=MyApp&log=ErrorLog&limit=100
+
+Response:
+[
+  {
+    "app": "MyApp",
+    "file": "/var/log/error.log",
+    "level": "ERROR",
+    "message": "Database connection failed",
+    "timestamp": "2025-01-12T12:00:00Z"
+  }
+]</code></pre>
+            </div>
+          </div>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method get">GET</span>
+              <span class="path">/api/apps</span>
+            </div>
+            <p class="description">List all configured applications and log files</p>
+          </div>
+
+          <h3>System Metrics</h3>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method get">GET</span>
+              <span class="path">/api/metrics/host</span>
+            </div>
+            <p class="description">Get current system metrics</p>
+            <div class="code-block">
+              <pre><code>GET /api/metrics/host
+
+Response:
+{
+  "cpu_percent": 45.2,
+  "ram_percent": 67.8,
+  "ram_total": 8589934592,
+  "ram_used": 5825830912,
+  "disk_percent": 42.1,
+  "disk_total": 1000204886016,
+  "disk_used": 421186068480,
+  "uptime": 86400,
+  "load_avg": 1.25
+}</code></pre>
+            </div>
+          </div>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method get">GET</span>
+              <span class="path">/api/metrics/history</span>
+            </div>
+            <p class="description">Get historical metrics data</p>
+            <div class="api-params">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>type</code></td>
+                    <td>Metric type (cpu, ram, disk)</td>
+                  </tr>
+                  <tr>
+                    <td><code>range</code></td>
+                    <td>Time range (1h, 6h, 24h)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <h3>Alert Management</h3>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method get">GET</span>
+              <span class="path">/api/alerts/rules</span>
+            </div>
+            <p class="description">List all alert rules</p>
+          </div>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method post">POST</span>
+              <span class="path">/api/alerts/rules</span>
+            </div>
+            <p class="description">Create new alert rule</p>
+            <div class="code-block">
+              <pre><code>POST /api/alerts/rules
+Content-Type: application/json
+
+{
+  "name": "High CPU Alert",
+  "type": "system_metric",
+  "condition": "cpu_high",
+  "threshold": 80.0,
+  "severity": "high",
+  "enabled": true,
+  "email_enabled": true
+}</code></pre>
+            </div>
+          </div>
+
+          <h3>WebSocket Endpoints</h3>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method get">WS</span>
+              <span class="path">/api/ws/metrics</span>
+            </div>
+            <p class="description">Real-time system metrics stream</p>
+            <div class="code-block">
+              <pre><code>// Connect to WebSocket
+const ws = new WebSocket('ws://localhost:7005/api/ws/metrics');
+
+ws.onmessage = (event) => {
+  const metrics = JSON.parse(event.data);
+  console.log(metrics);
+};</code></pre>
+            </div>
+          </div>
+
+          <div class="api-endpoint">
+            <div>
+              <span class="method get">WS</span>
+              <span class="path">/api/ws/logs</span>
+            </div>
+            <p class="description">Live log streaming</p>
+            <div class="code-block">
+              <pre><code>// Connect to WebSocket for live logs
+const ws = new WebSocket('ws://localhost:7005/api/ws/logs?app=MyApp&log=ErrorLog');
+
+ws.onmessage = (event) => {
+  const logLine = event.data;
+  console.log(logLine);
+};</code></pre>
+            </div>
+          </div>
+
+          <h2 id="troubleshooting">Troubleshooting</h2>
+
+          <h3>Common Issues</h3>
+
+          <h4>"No Logs Found"</h4>
+          <ul>
+            <li>Check file permissions: <code>ls -la /var/log/myapp/</code></li>
+            <li>Verify paths in <code>config.yaml</code></li>
+            <li>Ensure log files exist and are readable</li>
+          </ul>
+
+          <h4>Search Not Working</h4>
+          <ul>
+            <li>Ensure <code>grep</code>/<code>zgrep</code> tools are installed: <code>which grep zgrep</code></li>
+            <li>Check <code>$PATH</code> environment variable</li>
+            <li>Test grep manually: <code>grep "error" /var/log/myapp/app.log</code></li>
+          </ul>
+
+          <h4>Service Won't Start</h4>
+          <ul>
+            <li>Check logs: <code>sudo journalctl -u logmojo -f</code></li>
+            <li>Verify port 7005 is available: <code>sudo lsof -i :7005</code></li>
+            <li>Check permissions: <code>ls -la /opt/logmojo</code></li>
+          </ul>
+
+          <h4>Port 7005 Already in Use</h4>
+          <div class="code-block">
+            <pre><code># Change port in .env
+MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:8080
+
+# Restart service
+sudo systemctl restart logmojo</code></pre>
+          </div>
+
+          <h4>Email Alerts Not Working</h4>
+          <ul>
+            <li>Verify SMTP settings in <code>.env</code></li>
+            <li>For Gmail, use App Password (not regular password)</li>
+            <li>Test with built-in alert test function</li>
+            <li>Check logs for SMTP errors</li>
+          </ul>
+
+          <h3>Performance Optimization</h3>
+          <ul>
+            <li><strong>File Limits:</strong> Maximum 15 files per search, fallback to 3 most recent</li>
+            <li><strong>Search Timeout:</strong> 10-second timeout for better UX</li>
+            <li><strong>Result Limits:</strong> 2000 lines maximum per search</li>
+            <li><strong>Memory Management:</strong> Streaming output prevents OOM issues</li>
+          </ul>
+
+          <h3>Database Notes</h3>
+          <ul>
+            <li><code>monitor.db</code> stores only metadata (metrics, alerts, users)</li>
+            <li>Logs are <strong>never</strong> stored in database (performance feature)</li>
+            <li>Safe to delete <code>monitor.db</code> to reset (will lose metrics history)</li>
+            <li>Database is automatically created on first run</li>
+          </ul>
+
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i>
+            <div>
+              <strong>Need Help?</strong> Check the <a href="https://github.com/saiarlen/logmojo/issues" target="_blank">GitHub Issues</a> or create a new issue for support.
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-simple">
+          <p>&copy; 2025 Logmojo. Open Source under MIT License.</p>
+          <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="https://github.com/saiarlen/logmojo" target="_blank">GitHub</a>
+            <a href="https://github.com/saiarlen/logmojo/issues" target="_blank">Issues</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="assets/js/main.js"></script>
+    <script>
+      // Sidebar navigation
+      document.addEventListener('DOMContentLoaded', function() {
+        const navLinks = document.querySelectorAll('.docs-nav a');
+        
+        navLinks.forEach(link => {
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Remove active class from all links
+            navLinks.forEach(l => l.classList.remove('active'));
+            
+            // Add active class to clicked link
+            this.classList.add('active');
+            
+            // Scroll to target section
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+              const offsetTop = target.offsetTop - 100;
+              window.scrollTo({
+                top: offsetTop,
+                behavior: 'smooth'
+              });
+            }
+          });
+        });
+        
+        // Update active nav on scroll
+        window.addEventListener('scroll', function() {
+          const sections = document.querySelectorAll('h2[id]');
+          let current = '';
+          
+          sections.forEach(section => {
+            const sectionTop = section.offsetTop - 150;
+            if (window.pageYOffset >= sectionTop) {
+              current = section.getAttribute('id');
+            }
+          });
+          
+          navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === '#' + current) {
+              link.classList.add('active');
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

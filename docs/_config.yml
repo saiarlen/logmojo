@@ -1,0 +1,5 @@
+# GitHub Pages Configuration
+theme: jekyll-theme-cayman
+title: Logmojo
+description: High-Performance Log Management System
+show_downloads: false
