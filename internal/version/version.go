@@ -46,11 +46,16 @@ func init() {
 }
 
 func gitDescribe() (string, error) {
-	out, err := exec.Command("git", "describe", "--tags", "--dirty", "--always").Output()
+	out, err := exec.Command("git", "describe", "--tags", "--always").Output()
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(out)), nil
+	version := strings.TrimSpace(string(out))
+	// Remove -dirty suffix for cleaner version display
+	if strings.HasSuffix(version, "-dirty") {
+		version = strings.TrimSuffix(version, "-dirty")
+	}
+	return version, nil
 }
 
 func gitCommit() (string, error) {

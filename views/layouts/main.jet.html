@@ -18,6 +18,10 @@
             .sidebar-collapsed { width: 80px !important; }
             .sidebar-collapsed .menu-text { display: none; }
             .sidebar-collapsed .brand-text { display: none; }
+            .sidebar-collapsed .collapsed-logo { display: flex !important; }
+            .sidebar-collapsed .full-logo { display: none; }
+            .sidebar-collapsed .collapse-icon { display: none; }
+            .sidebar-collapsed .expand-icon { display: block !important; }
             .sidebar-collapsed .divider { margin: 8px 0; }
         }
         /* Mobile responsive logs table */
@@ -70,10 +74,17 @@
         <div class="drawer-content flex flex-col min-h-screen">
             <!-- Page content here -->
             <div class="flex-1 p-4 lg:p-8 gap-6 flex flex-col">
-                <label for="my-drawer-2" class="btn btn-primary drawer-button lg:hidden mb-4 rounded-lg">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                    Menu
-                </label>
+                <div class="flex items-center justify-between lg:hidden mb-4">
+                    {{ if logo_type == "image" }}
+                        <img src="/public/images/logo.png" alt="{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}" class="h-10" />
+                    {{ else }}
+                        <div class="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{{ if app_name }}{{ app_name }}{{ else }}Logmojo{{ end }}</div>
+                    {{ end }}
+                    <label for="my-drawer-2" class="btn btn-primary drawer-button rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-5 h-5 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        Menu
+                    </label>
+                </div>
                 
                 {{ yield body() }}
             </div>
@@ -89,18 +100,24 @@
             <label for="my-drawer-2" aria-label="close sidebar" class="drawer-overlay"></label> 
             <aside id="sidebar" class="w-72 min-h-full bg-base-100/90 backdrop-blur-md text-base-content flex flex-col shadow-2xl border-r border-base-content/5 transition-all duration-300">
                 <div class="p-6 pb-2 flex items-center justify-between">
-                    <div>
+                    <div class="flex items-center">
                         {{ if logo_type == "image" }}
-                            <img src="/public/images/logo.png" alt="{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}" class="h-8 px-2" id="app-logo" onerror="this.style.display='none'; document.getElementById('app-title').style.display='block'" />
+                            <img src="/public/images/logo.png" alt="{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}" class="h-12 px-2 full-logo" id="app-logo" onerror="this.style.display='none'; document.getElementById('app-title').style.display='block'" />
+                            <img src="/public/images/logo.png" alt="{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}" class="h-10 w-10 object-cover object-left rounded-lg collapsed-logo hidden" id="app-logo-collapsed" onerror="this.style.display='none'" />
                             <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2 hidden" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}</div>
                         {{ else }}
                             <div class="brand-text text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent px-2" id="app-title">{{ if app_name }}{{ app_name }}{{ else }}Logmojo Monitor{{ end }}</div>
+                            <div class="collapsed-logo hidden w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                                L
+                            </div>
                         {{ end }}
-                        <div class="brand-text text-xs font-medium opacity-50 px-2 mt-1">System Dashboard</div>
                     </div>
-                    <button onclick="toggleSidebar()" class="btn btn-ghost btn-sm p-2 hover:bg-base-300 hidden lg:flex">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    <button onclick="toggleSidebar()" class="btn btn-ghost btn-sm p-2 hover:bg-base-300 hidden lg:flex toggle-btn">
+                        <svg class="w-4 h-4 collapse-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
+                        </svg>
+                        <svg class="w-4 h-4 expand-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
                         </svg>
                     </button>
                 </div>
@@ -138,11 +155,11 @@
                         <span class="menu-text">Alerts</span>
                     </a></li>
                 </ul>
-                <!-- Settings & Logout Section - Glassmorphism Style -->
+                <!-- Settings & Logout Section -->
                 <div class="p-4 border-t border-base-content/10 mt-auto">
-                    <div class="flex gap-2">
-                        <!-- Settings Button - Glassmorphism -->
-                        <a href="/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg flex-1 transition-all duration-300 hover:bg-base-300 hover:scale-105 border border-base-content/10 {{ if isset(current_page) && current_page == "settings" }}bg-base-300{{ end }}" title="Settings">
+                    <div class="flex flex-col gap-2">
+                        <!-- Settings Button -->
+                        <a href="/settings" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 hover:bg-base-300 border border-base-content/10 {{ if isset(current_page) && current_page == "settings" }}bg-base-300{{ end }}" title="Settings">
                             <svg class="w-5 h-5 text-base-content/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -151,10 +168,11 @@
                         </a>
                         
                         <!-- Logout Button -->
-                        <a href="/logout" class="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-300 hover:bg-error/10 hover:scale-105 text-error/70 hover:text-error" title="Logout">
+                        <a href="/logout" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 hover:bg-error/10 text-error/70 hover:text-error border border-error/20" title="Logout">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                             </svg>
+                            <span class="menu-text font-medium">Logout</span>
                         </a>
                     </div>
                 </div>
