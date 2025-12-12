@@ -14,9 +14,12 @@ type Config struct {
 	Security  SecurityConfig  `mapstructure:"security"`
 	Services  []ServiceConfig `mapstructure:"services"`
 	Apps      []AppConfig     `mapstructure:"apps"`
-	Alerts    AlertsConfig    `mapstructure:"alerts"`
 	Notifiers NotifiersConfig `mapstructure:"notifiers"`
-	DevMode   bool            `mapstructure:"dev_mode"`
+	General   GeneralConfig   `mapstructure:"general"`
+}
+
+type GeneralConfig struct {
+	Version string `mapstructure:"version"`
 }
 
 type ServerConfig struct {
@@ -28,8 +31,7 @@ type DatabaseConfig struct {
 }
 
 type SecurityConfig struct {
-	JWTSecret      string `mapstructure:"jwt_secret"`
-	SessionTimeout string `mapstructure:"session_timeout"`
+	JWTSecret string `mapstructure:"jwt_secret"`
 }
 
 type AppConfig struct {
@@ -51,17 +53,6 @@ type ServiceConfig struct {
 type LogConfig struct {
 	Name string `mapstructure:"name" json:"name"`
 	Path string `mapstructure:"path" json:"path"`
-}
-
-type AlertsConfig struct {
-	CPU  AlertRule `mapstructure:"cpu_high"`
-	Disk AlertRule `mapstructure:"disk_low"`
-}
-
-type AlertRule struct {
-	Enabled              bool    `mapstructure:"enabled"`
-	Threshold            float64 `mapstructure:"threshold"`
-	ThresholdPercentFree float64 `mapstructure:"threshold_percent_free"`
 }
 
 type NotifiersConfig struct {
@@ -115,6 +106,8 @@ func Load() error {
 }
 
 func setDefaults() {
+	// Version
+	viper.SetDefault("general.version", "dev")
 	// Server defaults
 	viper.SetDefault("server.listen_addr", "0.0.0.0:7005")
 
@@ -123,13 +116,6 @@ func setDefaults() {
 
 	// Security defaults
 	viper.SetDefault("security.jwt_secret", "default-jwt-secret")
-	viper.SetDefault("security.session_timeout", "24h")
-
-	// Alert defaults
-	viper.SetDefault("alerts.cpu_high.enabled", true)
-	viper.SetDefault("alerts.cpu_high.threshold", 80.0)
-	viper.SetDefault("alerts.disk_low.enabled", true)
-	viper.SetDefault("alerts.disk_low.threshold_percent_free", 10.0)
 
 	// Notifier defaults
 	viper.SetDefault("notifiers.email.enabled", false)
@@ -142,6 +128,4 @@ func setDefaults() {
 	viper.SetDefault("notifiers.webhook.enabled", false)
 	viper.SetDefault("notifiers.webhook.url", "")
 
-	// Development mode
-	viper.SetDefault("dev_mode", false)
 }

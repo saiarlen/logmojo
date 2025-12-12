@@ -1,26 +1,23 @@
 package version
 
 import (
-	"os"
+	"logmojo/internal/config"
 	"os/exec"
 	"strings"
 	"time"
 )
 
 var (
-	Version   = getEnvOrDefault("VERSION", "dev")     // e.g. "v1.0.0"
-	Commit    = getEnvOrDefault("COMMIT", "none")     // e.g. "a7c3f1d"
-	BuildDate = getEnvOrDefault("BUILD_DATE", "unknown") // e.g. "2025-01-12T15:04:05Z"
+	Version   string
+	Commit    string
+	BuildDate string
 )
 
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-func init() {
+func Init() {
+	// Get version from config
+	Version = config.AppConfigData.General.Version
+	Commit = "none"
+	BuildDate = "unknown"
 
 	// If built locally (no ldflags), try reading git info
 	if Version == "dev" {

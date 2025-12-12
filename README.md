@@ -528,19 +528,13 @@ netsh advfirewall firewall add rule name="Logmojo" dir=in action=allow protocol=
 Key configuration options in `.env`:
 
 ```bash
+MONITOR_GENERAL_VERSION="dev"
 # Server Configuration
 MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:7005
 MONITOR_DATABASE_PATH=./monitor.db
 
 # Security
 MONITOR_SECURITY_JWT_SECRET=your-secret-key-change-this
-MONITOR_SECURITY_SESSION_TIMEOUT=24h
-
-# System Alerts
-MONITOR_ALERTS_CPU_HIGH_ENABLED=true
-MONITOR_ALERTS_CPU_HIGH_THRESHOLD=80.0
-MONITOR_ALERTS_DISK_LOW_ENABLED=true
-MONITOR_ALERTS_DISK_LOW_THRESHOLD_PERCENT_FREE=10.0
 
 # Email Notifications
 MONITOR_NOTIFIERS_EMAIL_ENABLED=true

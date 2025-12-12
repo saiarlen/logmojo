@@ -1,8 +1,8 @@
 package auth
 
 import (
+	"logmojo/internal/config"
 	"logmojo/internal/db"
-	"os"
 	"strings"
 	"time"
 
@@ -19,10 +19,7 @@ type Claims struct {
 }
 
 func getJWTSecret() string {
-	if secret := os.Getenv("MONITOR_SECURITY_JWT_SECRET"); secret != "" {
-		return secret
-	}
-	if secret := os.Getenv("JWT_SECRET"); secret != "" {
+	if secret := config.AppConfigData.Security.JWTSecret; secret != "" {
 		return secret
 	}
 	return "change-this-secret-in-production-use-env-JWT_SECRET"

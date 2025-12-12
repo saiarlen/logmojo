@@ -118,7 +118,10 @@ func startServer() {
 		log.Fatalf("Failed to init DB: %v", err)
 	}
 
-	// 2.5. Init Logger
+	// 2.5. Init Version
+	version.Init()
+
+	// 2.6. Init Logger
 	if err := logger.Init(); err != nil {
 		log.Fatalf("Failed to init Logger: %v", err)
 	}
@@ -210,6 +213,12 @@ func updatePassword(username, newPassword string) {
 }
 
 func showVersion() {
+	// Load config first for version command
+	if err := config.Load(); err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+	version.Init()
+	
 	fmt.Printf("Logmojo %s\n", version.Version)
 	fmt.Printf("Commit: %s\n", version.Commit)
 	fmt.Printf("Built: %s\n", version.BuildDate)
