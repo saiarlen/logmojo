@@ -24,7 +24,9 @@ curl -fsSL https://raw.githubusercontent.com/saiarlen/logmojo/main/scripts/deplo
 **Windows** - Manual installation:
 
 1. Download [latest release](https://github.com/saiarlen/logmojo/releases/latest)
-2. Extract and run `logmojo-windows-amd64.exe`
+2. Download extract assets and files (views folder, public folder, .env, config.yaml) from the logmojo-assets.tar.gz
+3. Setup .env and config.yaml from examples.env and config.yaml
+4. Extract and run `logmojo-windows-amd64.exe`
 
 **Access**: `http://localhost:7005` or `http://your-server-ip:7005`
 
@@ -242,6 +244,9 @@ wget https://github.com/saiarlen/logmojo/releases/latest/download/logmojo-darwin
 git clone https://github.com/saiarlen/logmojo.git
 cd logmojo
 
+# move binary into logmojo folder
+mv ../logmojo-* ../logmojo
+
 # Or download individual files from GitHub
 ```
 
@@ -284,7 +289,7 @@ After=network.target
 [Service]
 Type=simple
 User=logmojo
-WorkingDirectory=/opt/logmojo
+WorkingDirectory=/opt/logmojo  
 ExecStart=/opt/logmojo/logmojo
 Restart=always
 RestartSec=5
@@ -339,9 +344,6 @@ git pull origin main
 
 # Update dependencies
 go mod tidy
-
-# Run tests
-go test ./...
 
 # Build binary
 go build -o logmojo .
@@ -448,19 +450,53 @@ sudo journalctl -u logmojo -f
 
 - Run `logmojo.exe` directly or use NSSM to create a Windows service
 
-### 6. Updates (Linux/macOS)
+### 6. Updates
 
-**Zero-downtime update** (preserves data):
+#### Zero-Downtime Update (Linux/macOS)
+
+**Automated update** (preserves data and configuration):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/saiarlen/logmojo/main/scripts/update.sh | sudo bash
 ```
 
-**For Windows pull from latest release** (Manual):
+This update script will:
+- ✅ Download the latest binary
+- ✅ Preserve your existing configuration and data
+- ✅ Restart the service with zero downtime
+- ✅ Maintain all user accounts and settings
 
-1. Download the latest release from [GitHub](https://github.com/saiarlen/logmojo/releases)
-2. Replace the old binary with the new one
-3. Restart the service
+#### Manual Update (Windows/Linux/macOS)
+
+**For Linux/macOS:**
+
+```bash
+# 1. Backup current installation
+cp .env .env.backup
+cp config.yaml config.yaml.backup
+cp monitor.db monitor.db.backup
+
+# 2. Stop service
+sudo systemctl stop logmojo
+
+# 3. Download and replace binary
+wget https://github.com/saiarlen/logmojo/releases/latest/download/logmojo-linux-amd64
+chmod +x logmojo-linux-amd64
+
+# 4. Update views/ and public/ folders from latest release
+# 5. Restart service
+sudo systemctl start logmojo
+```
+
+**For Windows:**
+
+1. Backup `.env`, `config.yaml`, and `monitor.db` files
+2. Download latest release from [GitHub](https://github.com/saiarlen/logmojo/releases/latest)
+3. Stop Logmojo service (`nssm stop logmojo`)
+4. Replace binary and update `views/` and `public/` folders
+5. Restart service (`nssm start logmojo`)
+
+> **Note**: Database schema updates happen automatically on startup
 
 ---
 

@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/local/logmojo
-WorkingDirectory=/usr/local/share/logmojo
+ExecStart=/usr/local/logmojo #Update with your app path
+WorkingDirectory=/usr/local/share/logmojo #update with your app path
 Restart=always
 RestartSec=5
 Environment=MONITOR_SERVER_LISTEN_ADDR=0.0.0.0:7005
