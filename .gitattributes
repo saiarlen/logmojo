@@ -1,0 +1,25 @@
+# --- Force Go as Primary Language ---
+*.go linguist-language=Go
+
+# --- Mark Jet/HTML template files as vendored (ignored in stats) ---
+*.jet linguist-vendored
+*.html.jet linguist-vendored
+*.jet.html linguist-vendored
+templates/* linguist-vendored
+
+# --- Ignore static HTML/CSS/JS assets from linguist stats ---
+public/*.html linguist-vendored
+public/**/*.html linguist-vendored
+public/**/*.js linguist-vendored
+public/**/*.css linguist-vendored
+
+# --- Ignore minified/auto-generated files ---
+public/**/*.min.js linguist-vendored
+public/**/*.min.css linguist-vendored
+
+# --- Ignore vendor folders ---
+vendor/* linguist-vendored
+node_modules/* linguist-vendored
+
+# --- SQLite DB files (not code) ---
+*.db linguist-vendored
