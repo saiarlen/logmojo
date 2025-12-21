@@ -194,7 +194,13 @@ download_files() {
     # Create .env from example if it doesn't exist
     if [ ! -f .env ]; then
         cp .env.example .env
-        print_success "Created .env file from example"
+        # Set the actual version from GitHub release
+        sed -i "s/MONITOR_GENERAL_VERSION=\"dev\"/MONITOR_GENERAL_VERSION=\"$LATEST_VERSION\"/g" .env
+        print_success "Created .env file with version $LATEST_VERSION"
+    else
+        # Update existing .env with correct version
+        sed -i "s/MONITOR_GENERAL_VERSION=\"[^\"]*\"/MONITOR_GENERAL_VERSION=\"$LATEST_VERSION\"/g" .env
+        print_success "Updated .env with version $LATEST_VERSION"
     fi
     
     print_success "Required files downloaded"
@@ -210,6 +216,25 @@ create_user() {
     else
         print_success "User $SERVICE_USER already exists"
     fi
+    
+    # Add user to required groups for comprehensive log access
+    # System log groups
+    if getent group systemd-journal >/dev/null 2>&1; then
+        usermod -a -G systemd-journal $SERVICE_USER 2>/dev/null || print_warning "Failed to add user to systemd-journal group"
+    fi
+    if getent group adm >/dev/null 2>&1; then
+        usermod -a -G adm $SERVICE_USER 2>/dev/null || print_warning "Failed to add user to adm group"
+    fi
+    
+    # Add to all existing user groups for application log access
+    for group in $(getent group | grep -E '^[a-zA-Z][a-zA-Z0-9_-]*:[^:]*:[0-9]{4,}:' | cut -d: -f1); do
+        if [ "$group" != "$SERVICE_USER" ] && [ "$group" != "root" ] && [ "$group" != "nobody" ]; then
+            usermod -a -G "$group" $SERVICE_USER 2>/dev/null || true
+        fi
+    done
+    
+    print_success "Added $SERVICE_USER to all available log access groups"
+    
 }
 
 # Set permissions
@@ -236,8 +261,8 @@ Wants=network.target
 
 [Service]
 Type=simple
-User=$SERVICE_USER
-Group=$SERVICE_USER
+User=root
+Group=root
 WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/logmojo
 ExecReload=/bin/kill -HUP \$MAINPID
@@ -252,7 +277,7 @@ StartLimitInterval=0
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
-ProtectHome=yes
+#ProtectHome=yes
 ReadWritePaths=$INSTALL_DIR
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_BIND_SERVICE
@@ -265,10 +290,19 @@ Environment=MONITOR_DATABASE_PATH=$INSTALL_DIR/monitor.db
 WantedBy=multi-user.target
 EOF
 
+    # Create sudoers file for logmojo user
+    cat > /etc/sudoers.d/logmojo << EOF
+# Allow logmojo user to manage systemd services and kill processes
+$SERVICE_USER ALL=(ALL) NOPASSWD: /bin/systemctl start *, /bin/systemctl stop *, /bin/systemctl restart *, /bin/systemctl enable *, /bin/systemctl disable *
+$SERVICE_USER ALL=(ALL) NOPASSWD: /bin/kill -9 *
+EOF
+    
+    chmod 440 /etc/sudoers.d/logmojo
+
     systemctl daemon-reload
     systemctl enable $SERVICE_NAME
     
-    print_success "Systemd service created and enabled"
+    print_success "Systemd service and sudo permissions created"
 }
 
 # Configure firewall (if ufw is available)

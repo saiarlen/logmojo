@@ -22,6 +22,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	fiberlogger "github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/shirou/gopsutil/v3/host"
 )
 
 func Setup(app *fiber.App) {
@@ -517,11 +518,25 @@ func Setup(app *fiber.App) {
 			return c.Status(500).JSON(fiber.Map{"error": err.Error()})
 		}
 
+		// Get actual system info
+		hostInfo, _ := host.Info()
+		os := "Unknown"
+		platform := "Unknown"
+		arch := "Unknown"
+		hostname := "localhost"
+		
+		if hostInfo != nil {
+			os = hostInfo.OS
+			platform = hostInfo.Platform
+			arch = hostInfo.KernelArch
+			hostname = hostInfo.Hostname
+		}
+
 		return c.JSON(fiber.Map{
-			"os":        "macOS",
-			"platform":  "darwin",
-			"arch":      "amd64",
-			"hostname":  "localhost",
+			"os":        os,
+			"platform":  platform,
+			"arch":      arch,
+			"hostname":  hostname,
 			"uptime":    m.Uptime,
 			"version":   version.Version,
 			"commit":    version.Commit,
