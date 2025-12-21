@@ -55,7 +55,7 @@ func Setup(app *fiber.App) {
 		data := fiber.Map{
 			"current_page":   "dashboard",
 			"app_name":       "Logmojo Monitor",
-			"copyright_text": "© 2024 Logmojo",
+			"copyright_text": "&#169; 2025 Logmojo",
 			"logo_type":      "text",
 			"version":        version.Version,
 		}
@@ -72,7 +72,7 @@ func Setup(app *fiber.App) {
 		data := fiber.Map{
 			"current_page":   "logs",
 			"app_name":       "Logmojo Monitor",
-			"copyright_text": "© 2024 Logmojo",
+			"copyright_text": "&#169; 2025 Logmojo",
 			"logo_type":      "text",
 			"version":        version.Version,
 		}
@@ -135,7 +135,7 @@ func Setup(app *fiber.App) {
 		data := fiber.Map{
 			"current_page":   "processes",
 			"app_name":       "Logmojo Monitor",
-			"copyright_text": "© 2024 Logmojo",
+			"copyright_text": "&#169; 2025 Logmojo",
 			"logo_type":      "text",
 			"version":        version.Version,
 		}
@@ -152,7 +152,7 @@ func Setup(app *fiber.App) {
 		data := fiber.Map{
 			"current_page":   "services",
 			"app_name":       "Logmojo Monitor",
-			"copyright_text": "© 2024 Logmojo",
+			"copyright_text": "&#169; 2025 Logmojo",
 			"logo_type":      "text",
 			"version":        version.Version,
 		}
@@ -169,7 +169,7 @@ func Setup(app *fiber.App) {
 		data := fiber.Map{
 			"current_page":   "alerts",
 			"app_name":       "Logmojo Monitor",
-			"copyright_text": "© 2024 Logmojo",
+			"copyright_text": "&#169; 2025 Logmojo",
 			"logo_type":      "text",
 			"version":        version.Version,
 		}
@@ -186,7 +186,7 @@ func Setup(app *fiber.App) {
 		data := fiber.Map{
 			"current_page":   "settings",
 			"app_name":       "Logmojo Monitor",
-			"copyright_text": "© 2024 Logmojo",
+			"copyright_text": "&#169; 2025 Logmojo",
 			"logo_type":      "text",
 			"version":        version.Version,
 		}
@@ -505,7 +505,7 @@ func Setup(app *fiber.App) {
 		if err != nil {
 			return c.JSON(fiber.Map{
 				"app_name":       "Logmojo Monitor",
-				"copyright_text": "© 2024 Logmojo",
+				"copyright_text": "&#169; 2025 Logmojo",
 				"logo_type":      "text",
 			})
 		}
@@ -524,7 +524,7 @@ func Setup(app *fiber.App) {
 		platform := "Unknown"
 		arch := "Unknown"
 		hostname := "localhost"
-		
+
 		if hostInfo != nil {
 			os = hostInfo.OS
 			platform = hostInfo.Platform

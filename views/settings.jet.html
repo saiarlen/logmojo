@@ -125,7 +125,7 @@ async function loadAppSettings() {
         const settings = await response.json();
         
         document.getElementById('app-name').value = settings.app_name || 'Logmojo Monitor';
-        document.getElementById('copyright-text-input').value = settings.copyright_text || '© 2024 Logmojo';
+        document.getElementById('copyright-text-input').value = settings.copyright_text || '&#169; 2025 Logmojo';
         
         const logoTypeRadio = document.querySelector(`input[name="logo-type"][value="${settings.logo_type || 'text'}"]`);
         if (logoTypeRadio) logoTypeRadio.checked = true;
@@ -195,7 +195,7 @@ loadAppSettings();
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-2">Copyright Text</label>
-                    <input id="copyright-text-input" type="text" value="© 2024 Logmojo" class="input input-bordered w-full" />
+                    <input id="copyright-text-input" type="text" value="&#169; 2025 Logmojo" class="input input-bordered w-full" />
                 </div>
                 <button onclick="updateAppSettings()" class="btn btn-primary w-full">Save Branding</button>
             </div>

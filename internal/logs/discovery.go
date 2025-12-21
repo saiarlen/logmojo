@@ -147,7 +147,7 @@ func isLogFile(name string) bool {
 		return true
 	}
 
-	// Date-based rotations (app.log.2024-01-15)
+	// Date-based rotations (app.log.2025-01-15)
 	if strings.Contains(lower, ".log.") && (strings.Contains(lower, "-") || strings.Contains(lower, "_")) {
 		return true
 	}
