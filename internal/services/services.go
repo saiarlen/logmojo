@@ -168,15 +168,24 @@ func DisableService(serviceName string) error {
 
 func GetServiceLogs(serviceName string, lines int) ([]string, error) {
 	cmd := exec.Command("journalctl", "-u", serviceName, "-n", strconv.Itoa(lines), "--no-pager")
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput() // Use CombinedOutput to capture stderr too
 	if err != nil {
-		return nil, err
+		// Return more detailed error info
+		return []string{fmt.Sprintf("Error: %v - Output: %s", err, string(output))}, nil
 	}
 
 	var logLines []string
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
 	for scanner.Scan() {
-		logLines = append(logLines, scanner.Text())
+		line := scanner.Text()
+		if strings.TrimSpace(line) != "" { // Skip empty lines
+			logLines = append(logLines, line)
+		}
+	}
+
+	// If no logs found, return helpful message
+	if len(logLines) == 0 {
+		logLines = append(logLines, fmt.Sprintf("No logs found for service '%s'. Service may not exist or have no log entries.", serviceName))
 	}
 
 	return logLines, nil

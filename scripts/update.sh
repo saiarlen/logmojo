@@ -86,9 +86,12 @@ get_current_version() {
     
     # Try to get version from binary
     if [ -f "$INSTALL_DIR/logmojo" ]; then
-        CURRENT_VERSION=$($INSTALL_DIR/logmojo --version 2>/dev/null | head -n1 | awk '{print $2}' || echo "unknown")
+        # Try --version flag first, then -version, then fallback
+        CURRENT_VERSION=$($INSTALL_DIR/logmojo --version 2>/dev/null | head -n1 | awk '{print $2}' || \
+                         $INSTALL_DIR/logmojo -version 2>/dev/null | head -n1 | awk '{print $2}' || \
+                         echo "unknown")
         # If version doesn't start with 'v', add it
-        if [[ ! $CURRENT_VERSION =~ ^v ]]; then
+        if [[ ! $CURRENT_VERSION =~ ^v ]] && [[ $CURRENT_VERSION != "unknown" ]]; then
             CURRENT_VERSION="v$CURRENT_VERSION"
         fi
     else
@@ -268,6 +271,22 @@ set_permissions() {
     chown -R logmojo:logmojo $INSTALL_DIR
     chmod +x $INSTALL_DIR/logmojo
     
+    # Ensure logmojo user still has proper group memberships
+    # System log groups
+    if getent group systemd-journal >/dev/null 2>&1; then
+        usermod -a -G systemd-journal logmojo 2>/dev/null || print_warning "Failed to add user to systemd-journal group"
+    fi
+    if getent group adm >/dev/null 2>&1; then
+        usermod -a -G adm logmojo 2>/dev/null || print_warning "Failed to add user to adm group"
+    fi
+    
+    # Add to all existing user groups for application log access
+    for group in $(getent group | grep -E '^[a-zA-Z][a-zA-Z0-9_-]*:[^:]*:[0-9]{4,}:' | cut -d: -f1); do
+        if [ "$group" != "logmojo" ] && [ "$group" != "root" ] && [ "$group" != "nobody" ]; then
+            usermod -a -G "$group" logmojo 2>/dev/null || true
+        fi
+    done
+    
     print_success "Permissions set"
 }
 
@@ -351,6 +370,13 @@ main() {
     update_assets
     replace_binary
     set_permissions
+    
+    # Update version in .env file
+    if [ -f "$INSTALL_DIR/.env" ]; then
+        sed -i "s/MONITOR_GENERAL_VERSION=\"[^\"]*\"/MONITOR_GENERAL_VERSION=\"$LATEST_VERSION\"/g" "$INSTALL_DIR/.env"
+        print_success "Updated version to $LATEST_VERSION in .env"
+    fi
+    
     start_service
     cleanup
     print_completion
